@@ -39,7 +39,12 @@ function TripLayout() {
   const trip = trips.find(t => t.id === tripId)
 
   const title = SECTION_TITLES[section] ?? ''
-  const backTo = section === 'dashboard' ? '/' : `/${parts.slice(1, 3).join('/')}/transportes`
+
+  // Tabs principales → volver al Home. Sub-páginas (más, actividades, checklist, splits) → volver a "más".
+  const SUB_SECTIONS = new Set(['actividades', 'checklist', 'splits'])
+  const backTo = SUB_SECTIONS.has(section)
+    ? `/viaje/${tripId}/mas`
+    : '/'
 
   return (
     <div className="flex flex-col min-h-screen">
