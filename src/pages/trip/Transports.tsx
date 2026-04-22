@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Plane } from 'lucide-react'
+import { Plus, Trash2, Pencil, Plane, ExternalLink } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -12,7 +12,7 @@ const TRANSPORT_TYPES: TransportType[] = ['avión', 'tren', 'bus', 'auto', 'barc
 const EMPTY: Omit<Transport, 'id'> = {
   origin: '', destination: '', departureDate: '', departureTime: '',
   arrivalDate: '', arrivalTime: '', bookingCode: '', company: '',
-  type: 'avión', notes: '',
+  type: 'avión', notes: '', url: '',
 }
 
 export function Transports() {
@@ -73,6 +73,12 @@ export function Transports() {
                 </div>
               </div>
               <div className="flex gap-1 shrink-0">
+                {t.url && (
+                  <a href={t.url} target="_blank" rel="noopener noreferrer"
+                    className="p-2 text-blue-500 hover:text-blue-700" aria-label="Abrir reserva">
+                    <ExternalLink size={16} />
+                  </a>
+                )}
                 <button onClick={() => openEdit(t)} className="p-2 text-gray-400 hover:text-gray-700">
                   <Pencil size={16} />
                 </button>
@@ -160,6 +166,11 @@ export function Transports() {
               <label className="block text-xs font-medium text-gray-700 mb-1">Notas (escalas, tiempo antes, etc.)</label>
               <input className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm" placeholder="Escala en Madrid"
                 value={form.notes} onChange={e => f('notes', e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Link de reserva</label>
+              <input type="url" className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"
+                placeholder="https://www.ryanair.com/..." value={form.url} onChange={e => f('url', e.target.value)} />
             </div>
             <button onClick={handleSave} disabled={!form.origin || !form.destination}
               className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold text-sm hover:bg-blue-700 disabled:opacity-40 transition-colors">

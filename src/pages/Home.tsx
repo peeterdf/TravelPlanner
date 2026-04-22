@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, MapPin, Trash2, Calendar, Users, Sparkles } from 'lucide-react'
+import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload } from 'lucide-react'
 import { useTripsStore } from '../store/tripsStore'
 import { Modal } from '../components/ui/Modal'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -16,6 +16,7 @@ function formatDate(d: string) {
 export function Home() {
   const { trips, loaded, load, addTrip, deleteTrip, importTrip } = useTripsStore()
   const navigate = useNavigate()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [showNew, setShowNew] = useState(false)
   const [name, setName] = useState('')
   const [startDate, setStartDate] = useState('')
@@ -36,6 +37,22 @@ export function Home() {
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     if (confirm('¿Eliminar este viaje y todos sus datos?')) deleteTrip(id)
+  }
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      try {
+        const trip = JSON.parse(ev.target?.result as string)
+        if (!trip?.id || !trip?.name) { alert('Archivo inválido'); return }
+        importTrip(trip)
+        navigate(`/viaje/${trip.id}/transportes`)
+      } catch { alert('No se pudo leer el archivo') }
+    }
+    reader.readAsText(file)
+    e.target.value = ''
   }
 
   const handleLoadDemo = () => {
@@ -127,6 +144,17 @@ export function Home() {
           ))
         )}
       </div>
+
+      {/* Hidden file input for import */}
+      <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+
+      <button
+        onClick={() => fileInputRef.current?.click()}
+        className="fixed bottom-24 right-4 z-30 bg-white text-blue-600 border border-blue-200 rounded-full w-12 h-12 flex items-center justify-center shadow-md hover:bg-blue-50 active:scale-95 transition-all"
+        aria-label="Importar viaje"
+      >
+        <Upload size={20} />
+      </button>
 
       <button
         onClick={() => setShowNew(true)}

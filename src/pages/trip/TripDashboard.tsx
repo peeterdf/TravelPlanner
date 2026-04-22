@@ -3,7 +3,24 @@ import { useTripsStore } from '../../store/tripsStore'
 import { validateItinerary } from '../../utils/validate'
 import { format, differenceInDays } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Plane, Calendar, Building2, Wallet, CheckSquare, AlertTriangle, CheckCircle, Users, Activity, ArrowRight } from 'lucide-react'
+import { Plane, Calendar, Building2, Wallet, CheckSquare, AlertTriangle, CheckCircle, Users, Activity, ArrowRight, Share2 } from 'lucide-react'
+
+function shareTrip(trip: ReturnType<typeof useTripsStore.getState>['trips'][0]) {
+  const json = JSON.stringify(trip, null, 2)
+  const blob = new Blob([json], { type: 'application/json' })
+  const file = new File([blob], `${trip.name.replace(/\s+/g, '_')}.json`, { type: 'application/json' })
+
+  if (navigator.canShare?.({ files: [file] })) {
+    navigator.share({ files: [file], title: trip.name }).catch(() => {})
+  } else {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = file.name
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+}
 
 function formatDate(d: string) {
   try { return format(new Date(d + 'T00:00:00'), 'd MMM', { locale: es }) } catch { return d }
@@ -45,7 +62,16 @@ export function TripDashboard() {
     <div className="p-4 space-y-4 pb-8">
       {/* Trip header */}
       <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-4 text-white">
-        <h2 className="text-xl font-bold">{trip.name}</h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-xl font-bold">{trip.name}</h2>
+          <button
+            onClick={() => shareTrip(trip)}
+            className="shrink-0 p-2 bg-blue-500/40 hover:bg-blue-500/60 rounded-xl transition-colors"
+            aria-label="Compartir viaje"
+          >
+            <Share2 size={18} />
+          </button>
+        </div>
         {trip.startDate && trip.endDate && (
           <p className="text-blue-200 text-sm mt-1">
             {formatDate(trip.startDate)} → {formatDate(trip.endDate)}

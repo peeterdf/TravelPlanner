@@ -17,6 +17,7 @@ export interface Transport {
   company: string
   type: TransportType
   notes: string
+  url: string
 }
 
 export interface Accommodation {
@@ -28,6 +29,7 @@ export interface Accommodation {
   phone: string
   address: string
   notes: string
+  url: string
 }
 
 export interface ItineraryDay {
