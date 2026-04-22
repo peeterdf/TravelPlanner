@@ -1,0 +1,33 @@
+import { X } from 'lucide-react'
+import { useEffect } from 'react'
+
+interface ModalProps {
+  title: string
+  onClose: () => void
+  children: React.ReactNode
+}
+
+export function Modal({ title, onClose, children }: ModalProps) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div className="bg-white w-full max-w-lg rounded-t-2xl sm:rounded-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+          <button onClick={onClose} className="p-1 text-gray-500 hover:text-gray-700">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="overflow-y-auto flex-1 p-4">{children}</div>
+      </div>
+    </div>
+  )
+}
