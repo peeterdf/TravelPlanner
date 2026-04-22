@@ -15,6 +15,7 @@ interface TripsState {
   loaded: boolean
   load: () => Promise<void>
   addTrip: (name: string, startDate: string, endDate: string, travelers: string[]) => string
+  importTrip: (trip: Trip) => void
   deleteTrip: (id: string) => void
   updateTrip: (id: string, partial: Partial<Pick<Trip, 'name' | 'startDate' | 'endDate'>>) => void
 
@@ -91,6 +92,15 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     persist(trips)
     set({ trips })
     return id
+  },
+
+  importTrip: (trip) => {
+    const existing = get().trips.find(t => t.id === trip.id)
+    const trips = existing
+      ? get().trips.map(t => t.id === trip.id ? trip : t)
+      : [...get().trips, trip]
+    persist(trips)
+    set({ trips })
   },
 
   deleteTrip: (id) => {

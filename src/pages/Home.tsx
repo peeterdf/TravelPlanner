@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, MapPin, Trash2, Calendar, Users } from 'lucide-react'
+import { Plus, MapPin, Trash2, Calendar, Users, Sparkles } from 'lucide-react'
 import { useTripsStore } from '../store/tripsStore'
 import { Modal } from '../components/ui/Modal'
 import { EmptyState } from '../components/ui/EmptyState'
+import { buildDemoTrip } from '../utils/demoData'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -13,7 +14,7 @@ function formatDate(d: string) {
 }
 
 export function Home() {
-  const { trips, loaded, load, addTrip, deleteTrip } = useTripsStore()
+  const { trips, loaded, load, addTrip, deleteTrip, importTrip } = useTripsStore()
   const navigate = useNavigate()
   const [showNew, setShowNew] = useState(false)
   const [name, setName] = useState('')
@@ -37,6 +38,13 @@ export function Home() {
     if (confirm('¿Eliminar este viaje y todos sus datos?')) deleteTrip(id)
   }
 
+  const handleLoadDemo = () => {
+    const already = trips.find(t => t.id === 'demo-europa-2024')
+    if (already) { navigate(`/viaje/demo-europa-2024/transportes`); return }
+    importTrip(buildDemoTrip())
+    navigate('/viaje/demo-europa-2024/transportes')
+  }
+
   if (!loaded) {
     return <div className="flex items-center justify-center h-screen text-gray-400">Cargando...</div>
   }
@@ -46,6 +54,15 @@ export function Home() {
       <header className="bg-blue-600 text-white px-4 pt-10 pb-6">
         <h1 className="text-2xl font-bold">Mis viajes</h1>
         <p className="text-blue-200 text-sm mt-1">Organizá tus aventuras</p>
+        {trips.length > 0 && !trips.find(t => t.id === 'demo-europa-2024') && (
+          <button
+            onClick={handleLoadDemo}
+            className="mt-3 flex items-center gap-1.5 text-blue-200 hover:text-white text-xs font-medium transition-colors"
+          >
+            <Sparkles size={13} />
+            Cargar viaje de ejemplo
+          </button>
+        )}
       </header>
 
       <div className="p-4 space-y-3 pb-24">
@@ -54,6 +71,15 @@ export function Home() {
             icon={<MapPin size={56} />}
             title="Todavía no hay viajes"
             description="Creá tu primer viaje para empezar a organizar."
+            action={
+              <button
+                onClick={handleLoadDemo}
+                className="flex items-center gap-2 text-blue-600 text-sm font-medium mt-2 hover:underline"
+              >
+                <Sparkles size={15} />
+                Cargar viaje de ejemplo (Europa 2024)
+              </button>
+            }
           />
         ) : (
           trips.map(trip => (
