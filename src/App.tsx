@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
+import { Share2 } from 'lucide-react'
 import { useTripsStore } from './store/tripsStore'
 import { Home } from './pages/Home'
 import { TripDashboard } from './pages/trip/TripDashboard'
@@ -13,6 +14,21 @@ import { Packing } from './pages/trip/Packing'
 import { More } from './pages/trip/More'
 import { Header } from './components/layout/Header'
 import { BottomNav } from './components/layout/BottomNav'
+import type { Trip } from './types'
+
+function shareTrip(trip: Trip) {
+  const json = JSON.stringify(trip, null, 2)
+  const blob = new Blob([json], { type: 'application/json' })
+  const file = new File([blob], `${trip.name.replace(/\s+/g, '_')}.json`, { type: 'application/json' })
+  if (navigator.canShare?.({ files: [file] })) {
+    navigator.share({ files: [file], title: trip.name }).catch(() => {})
+  } else {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = file.name; a.click()
+    URL.revokeObjectURL(url)
+  }
+}
 
 const SECTION_TITLES: Record<string, string> = {
   dashboard: 'Resumen',
@@ -52,7 +68,15 @@ function TripLayout() {
         title={title}
         backTo={backTo}
         right={
-          trip ? <span className="text-xs text-gray-500 truncate max-w-[120px]">{trip.name}</span> : undefined
+          trip ? (
+            <button
+              onClick={() => shareTrip(trip)}
+              className="p-2 text-gray-500 hover:text-blue-600 transition-colors"
+              aria-label="Compartir viaje"
+            >
+              <Share2 size={20} />
+            </button>
+          ) : undefined
         }
       />
       <main className="flex-1 overflow-y-auto">
