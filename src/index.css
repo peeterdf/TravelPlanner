@@ -13,6 +13,10 @@
     color: #111827;
     -webkit-font-smoothing: antialiased;
   }
+  .dark body {
+    background-color: #030712;
+    color: #f9fafb;
+  }
   #root {
     min-height: 100vh;
     display: flex;

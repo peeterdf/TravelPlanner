@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTripsStore } from '../../store/tripsStore'
+import { useSettingsStore, useMask } from '../../store/settingsStore'
 import { validateItinerary } from '../../utils/validate'
 import { format, differenceInDays } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -13,9 +14,11 @@ export function TripDashboard() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
   const trip = useTripsStore(s => s.trips.find(t => t.id === tripId))
+  const { privacyMode } = useSettingsStore()
+  const mask = useMask()
 
   if (!trip) return (
-    <div className="p-6 text-center text-gray-500">
+    <div className="p-6 text-center text-gray-500 dark:text-gray-400">
       Viaje no encontrado. <button className="text-blue-600 underline" onClick={() => navigate('/')}>Volver</button>
     </div>
   )
@@ -33,12 +36,12 @@ export function TripDashboard() {
   const totalItems = trip.packingList.flatMap(c => c.items).length
 
   const sections = [
-    { label: 'Transportes', icon: Plane, to: 'transportes', value: `${trip.transports.length} tramos`, color: 'text-blue-600 bg-blue-50' },
-    { label: 'Itinerario', icon: Calendar, to: 'itinerario', value: `${trip.itinerary.length} días`, color: 'text-purple-600 bg-purple-50' },
-    { label: 'Alojamiento', icon: Building2, to: 'alojamiento', value: `${trip.accommodations.length} lugares`, color: 'text-green-600 bg-green-50' },
-    { label: 'Gastos', icon: Wallet, to: 'gastos', value: `$${totalExpenses.toFixed(0)}`, color: 'text-orange-600 bg-orange-50' },
-    { label: 'Actividades', icon: Activity, to: 'actividades', value: `${trip.activities.length} actividades`, color: 'text-pink-600 bg-pink-50' },
-    { label: 'Checklist', icon: CheckSquare, to: 'checklist', value: `${checkedItems}/${totalItems}`, color: 'text-teal-600 bg-teal-50' },
+    { label: 'Transportes', icon: Plane, to: 'transportes', value: `${trip.transports.length} tramos`, color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' },
+    { label: 'Itinerario', icon: Calendar, to: 'itinerario', value: `${trip.itinerary.length} días`, color: 'text-purple-600 bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400' },
+    { label: 'Alojamiento', icon: Building2, to: 'alojamiento', value: `${trip.accommodations.length} lugares`, color: 'text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400' },
+    { label: 'Gastos', icon: Wallet, to: 'gastos', value: privacyMode ? '••••' : `$${totalExpenses.toFixed(0)}`, color: 'text-orange-600 bg-orange-50 dark:bg-orange-900/30 dark:text-orange-400' },
+    { label: 'Actividades', icon: Activity, to: 'actividades', value: `${trip.activities.length} actividades`, color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/30 dark:text-pink-400' },
+    { label: 'Checklist', icon: CheckSquare, to: 'checklist', value: `${checkedItems}/${totalItems}`, color: 'text-teal-600 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-400' },
   ]
 
   return (
@@ -55,13 +58,13 @@ export function TripDashboard() {
         {trip.travelers.length > 0 && (
           <div className="flex items-center gap-1.5 mt-2 text-blue-200 text-sm">
             <Users size={14} />
-            <span>{trip.travelers.map(t => t.name).join(' · ')}</span>
+            <span>{trip.travelers.map(t => mask.name(t.name)).join(' · ')}</span>
           </div>
         )}
       </div>
 
       {/* Validation indicator */}
-      <div className={`rounded-2xl p-3 flex items-start gap-3 ${conflicts.length === 0 ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
+      <div className={`rounded-2xl p-3 flex items-start gap-3 ${conflicts.length === 0 ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'}`}>
         {conflicts.length === 0
           ? <><CheckCircle size={18} className="shrink-0 mt-0.5" /><span className="text-sm font-medium">Itinerario consistente con los transportes</span></>
           : (
@@ -83,20 +86,20 @@ export function TripDashboard() {
 
       {/* Finance summary */}
       {totalExpenses > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-3">Resumen financiero</p>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm">
+          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium uppercase tracking-wide mb-3">Resumen financiero</p>
           <div className="grid grid-cols-3 gap-2 text-center">
             <div>
-              <p className="text-lg font-bold text-gray-900">${totalExpenses.toFixed(0)}</p>
-              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-lg font-bold text-gray-900 dark:text-white">{mask.amount(totalExpenses)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-green-600">${totalPaid.toFixed(0)}</p>
-              <p className="text-xs text-gray-500">Pagado</p>
+              <p className="text-lg font-bold text-green-600 dark:text-green-400">{mask.amount(totalPaid)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Pagado</p>
             </div>
             <div>
-              <p className={`text-lg font-bold ${remaining > 0 ? 'text-red-600' : 'text-green-600'}`}>${remaining.toFixed(0)}</p>
-              <p className="text-xs text-gray-500">Pendiente</p>
+              <p className={`text-lg font-bold ${remaining > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{mask.amount(remaining)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Pendiente</p>
             </div>
           </div>
         </div>
@@ -108,14 +111,14 @@ export function TripDashboard() {
           <button
             key={to}
             onClick={() => navigate(`/viaje/${tripId}/${to}`)}
-            className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow active:scale-[0.99] text-left"
+            className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow active:scale-[0.99] text-left"
           >
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
               <Icon size={20} />
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-gray-500">{label}</p>
-              <p className="text-sm font-semibold text-gray-900 truncate">{value}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{value}</p>
             </div>
           </button>
         ))}
@@ -124,18 +127,18 @@ export function TripDashboard() {
       {/* Splits shortcut */}
       <button
         onClick={() => navigate(`/viaje/${tripId}/splits`)}
-        className="w-full bg-white rounded-2xl border border-gray-100 p-4 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow"
+        className="w-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
             <Users size={20} />
           </div>
           <div className="text-left">
-            <p className="text-xs text-gray-500">División de gastos</p>
-            <p className="text-sm font-semibold text-gray-900">{trip.expenseSplits.length} registros</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">División de gastos</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">{trip.expenseSplits.length} registros</p>
           </div>
         </div>
-        <ArrowRight size={16} className="text-gray-400" />
+        <ArrowRight size={16} className="text-gray-400 dark:text-gray-500" />
       </button>
     </div>
   )

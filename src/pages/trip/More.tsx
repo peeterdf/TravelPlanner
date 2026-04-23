@@ -5,9 +5,9 @@ export function More() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
   const items = [
-    { icon: Star, label: 'Actividades', desc: 'Lugares y planes por día', to: 'actividades', color: 'text-pink-600 bg-pink-50' },
-    { icon: CheckSquare, label: 'Checklist equipaje', desc: 'Listas de packing por categoría', to: 'checklist', color: 'text-teal-600 bg-teal-50' },
-    { icon: Users, label: 'División de gastos', desc: 'Quién pagó qué y deudas', to: 'splits', color: 'text-indigo-600 bg-indigo-50' },
+    { icon: Star, label: 'Actividades', desc: 'Lugares y planes por día', to: 'actividades', color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/30 dark:text-pink-400' },
+    { icon: CheckSquare, label: 'Checklist equipaje', desc: 'Listas de packing por categoría', to: 'checklist', color: 'text-teal-600 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-400' },
+    { icon: Users, label: 'División de gastos', desc: 'Quién pagó qué y deudas', to: 'splits', color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' },
   ]
   return (
     <div className="p-4 space-y-3 pb-28">
@@ -15,16 +15,16 @@ export function More() {
         <button
           key={to}
           onClick={() => navigate(`/viaje/${tripId}/${to}`)}
-          className="w-full bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-shadow active:scale-[0.99]"
+          className="w-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-shadow active:scale-[0.99]"
         >
           <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
             <Icon size={22} />
           </div>
           <div className="flex-1 text-left">
-            <p className="font-semibold text-gray-900">{label}</p>
-            <p className="text-sm text-gray-500 mt-0.5">{desc}</p>
+            <p className="font-semibold text-gray-900 dark:text-white">{label}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{desc}</p>
           </div>
-          <ArrowRight size={18} className="text-gray-400" />
+          <ArrowRight size={18} className="text-gray-400 dark:text-gray-500" />
         </button>
       ))}
     </div>

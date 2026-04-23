@@ -12,7 +12,7 @@ const tabs = [
 export function BottomNav() {
   const { tripId } = useParams<{ tripId: string }>()
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-gray-200 safe-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-20 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 safe-bottom">
       <div className="flex">
         {tabs.map(({ to, icon: Icon, label }) => (
           <NavLink
@@ -20,7 +20,9 @@ export function BottomNav() {
             to={`/viaje/${tripId}/${to}`}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center justify-center py-2 gap-0.5 text-xs font-medium transition-colors ${
-                isActive ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'
+                isActive
+                  ? 'text-blue-600 dark:text-blue-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`
             }
           >

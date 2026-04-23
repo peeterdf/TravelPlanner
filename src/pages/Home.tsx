@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload } from 'lucide-react'
+import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload, Moon, Sun, Eye, EyeOff } from 'lucide-react'
 import { useTripsStore } from '../store/tripsStore'
+import { useSettingsStore, useMask } from '../store/settingsStore'
 import { Modal } from '../components/ui/Modal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { buildDemoTrip } from '../utils/demoData'
@@ -13,8 +14,12 @@ function formatDate(d: string) {
   catch { return d }
 }
 
+const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
+
 export function Home() {
   const { trips, loaded, load, addTrip, deleteTrip, importTrip } = useTripsStore()
+  const { darkMode, privacyMode, toggleDark, togglePrivacy } = useSettingsStore()
+  const mask = useMask()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showNew, setShowNew] = useState(false)
@@ -63,14 +68,34 @@ export function Home() {
   }
 
   if (!loaded) {
-    return <div className="flex items-center justify-center h-screen text-gray-400">Cargando...</div>
+    return <div className="flex items-center justify-center h-screen text-gray-400 dark:bg-gray-950">Cargando...</div>
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <header className="bg-blue-600 text-white px-4 pt-10 pb-6">
-        <h1 className="text-2xl font-bold">Mis viajes</h1>
-        <p className="text-blue-200 text-sm mt-1">Organizá tus aventuras</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Mis viajes</h1>
+            <p className="text-blue-200 text-sm mt-1">Organizá tus aventuras</p>
+          </div>
+          <div className="flex gap-1 -mr-1 mt-1">
+            <button
+              onClick={toggleDark}
+              className="p-2 text-blue-200 hover:text-white transition-colors"
+              aria-label={darkMode ? 'Modo claro' : 'Modo oscuro'}
+            >
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button
+              onClick={togglePrivacy}
+              className={`p-2 transition-colors ${privacyMode ? 'text-yellow-300' : 'text-blue-200 hover:text-white'}`}
+              aria-label={privacyMode ? 'Mostrar datos' : 'Ocultar datos'}
+            >
+              {privacyMode ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
         {trips.length > 0 && !trips.find(t => t.id === 'demo-europa-2024') && (
           <button
             onClick={handleLoadDemo}
@@ -103,21 +128,21 @@ export function Home() {
             <div
               key={trip.id}
               onClick={() => navigate(`/viaje/${trip.id}/transportes`)}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <h2 className="font-semibold text-gray-900 text-base truncate">{trip.name}</h2>
-                  <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
+                  <h2 className="font-semibold text-gray-900 dark:text-white text-base truncate">{trip.name}</h2>
+                  <div className="flex items-center gap-1 mt-1 text-sm text-gray-500 dark:text-gray-400">
                     <Calendar size={13} />
                     <span>
                       {trip.startDate ? formatDate(trip.startDate) : '?'} – {trip.endDate ? formatDate(trip.endDate) : '?'}
                     </span>
                   </div>
                   {trip.travelers.length > 0 && (
-                    <div className="flex items-center gap-1 mt-1 text-sm text-gray-500">
+                    <div className="flex items-center gap-1 mt-1 text-sm text-gray-500 dark:text-gray-400">
                       <Users size={13} />
-                      <span>{trip.travelers.map(t => t.name).join(', ')}</span>
+                      <span>{trip.travelers.map(t => mask.name(t.name)).join(', ')}</span>
                     </div>
                   )}
                 </div>
@@ -129,14 +154,14 @@ export function Home() {
                   <Trash2 size={18} />
                 </button>
               </div>
-              <div className="flex gap-3 mt-3 text-xs text-gray-500">
-                <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+              <div className="flex gap-3 mt-3 text-xs">
+                <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
                   {trip.transports.length} tramos
                 </span>
-                <span className="bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-medium">
+                <span className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
                   {trip.accommodations.length} alojam.
                 </span>
-                <span className="bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-medium">
+                <span className="bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full font-medium">
                   {trip.expenses.length} gastos
                 </span>
               </div>
@@ -145,12 +170,11 @@ export function Home() {
         )}
       </div>
 
-      {/* Hidden file input for import */}
       <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
 
       <button
         onClick={() => fileInputRef.current?.click()}
-        className="fixed bottom-24 right-4 z-30 bg-white text-blue-600 border border-blue-200 rounded-full w-12 h-12 flex items-center justify-center shadow-md hover:bg-blue-50 active:scale-95 transition-all"
+        className="fixed bottom-24 right-4 z-30 bg-white dark:bg-gray-800 text-blue-600 border border-blue-200 dark:border-blue-700 rounded-full w-12 h-12 flex items-center justify-center shadow-md hover:bg-blue-50 dark:hover:bg-gray-700 active:scale-95 transition-all"
         aria-label="Importar viaje"
       >
         <Upload size={20} />
@@ -168,43 +192,22 @@ export function Home() {
         <Modal title="Nuevo viaje" onClose={() => setShowNew(false)}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del viaje *</label>
-              <input
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Ej: Europa 2024"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                autoFocus
-              />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del viaje *</label>
+              <input className={inputCls} placeholder="Ej: Europa 2024" value={name} onChange={e => setName(e.target.value)} autoFocus />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de salida</label>
-                <input
-                  type="date"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={startDate}
-                  onChange={e => setStartDate(e.target.value)}
-                />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de salida</label>
+                <input type="date" className={inputCls} value={startDate} onChange={e => setStartDate(e.target.value)} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de vuelta</label>
-                <input
-                  type="date"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={endDate}
-                  onChange={e => setEndDate(e.target.value)}
-                />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de vuelta</label>
+                <input type="date" className={inputCls} value={endDate} onChange={e => setEndDate(e.target.value)} />
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Viajeros (separados por coma)</label>
-              <input
-                className="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Ej: Peeter, Cacho, Rama, Nacho"
-                value={travelersRaw}
-                onChange={e => setTravelersRaw(e.target.value)}
-              />
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Viajeros (separados por coma)</label>
+              <input className={inputCls} placeholder="Ej: Peeter, Cacho, Rama, Nacho" value={travelersRaw} onChange={e => setTravelersRaw(e.target.value)} />
             </div>
             <button
               onClick={handleCreate}
