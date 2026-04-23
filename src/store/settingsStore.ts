@@ -7,13 +7,16 @@ interface SettingsState {
   togglePrivacy: () => void
 }
 
-const loadBool = (key: string): boolean => {
-  try { return localStorage.getItem(key) === 'true' } catch { return false }
+const loadBool = (key: string, def = false): boolean => {
+  try {
+    const val = localStorage.getItem(key)
+    return val === null ? def : val === 'true'
+  } catch { return def }
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
-  darkMode: loadBool('darkMode'),
-  privacyMode: loadBool('privacyMode'),
+  darkMode: loadBool('darkMode', true),
+  privacyMode: loadBool('privacyMode', false),
   toggleDark: () => set(s => {
     const next = !s.darkMode
     localStorage.setItem('darkMode', String(next))
