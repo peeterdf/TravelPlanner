@@ -2,12 +2,12 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTripsStore } from '../../store/tripsStore'
 import { useSettingsStore, useMask } from '../../store/settingsStore'
 import { validateItinerary } from '../../utils/validate'
-import { format, differenceInDays } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { differenceInDays } from 'date-fns'
 import { Plane, Calendar, Building2, Wallet, CheckSquare, AlertTriangle, CheckCircle, Users, Activity, ArrowRight } from 'lucide-react'
 
 function formatDate(d: string) {
-  try { return format(new Date(d + 'T00:00:00'), 'd MMM', { locale: es }) } catch { return d }
+  const [, m, day] = d.split('-')
+  return `${day}/${m}`
 }
 
 export function TripDashboard() {

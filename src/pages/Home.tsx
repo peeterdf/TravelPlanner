@@ -6,11 +6,8 @@ import { useSettingsStore, useMask } from '../store/settingsStore'
 import { Modal } from '../components/ui/Modal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { buildDemoTrip } from '../utils/demoData'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
-
 function formatDate(d: string) {
-  try { return format(new Date(d + 'T00:00:00'), 'd MMM yyyy', { locale: es }) }
+  try { return d.split('-').reverse().join('/') }
   catch { return d }
 }
 

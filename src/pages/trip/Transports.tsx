@@ -9,6 +9,8 @@ import type { Transport, TransportType } from '../../types'
 
 const TRANSPORT_TYPES: TransportType[] = ['avión', 'tren', 'bus', 'auto', 'barco', 'otro']
 
+const fmtDate = (d: string) => d ? d.split('-').reverse().join('/') : ''
+
 const EMPTY: Omit<Transport, 'id'> = {
   origin: '', destination: '', departureDate: '', departureTime: '',
   arrivalDate: '', arrivalTime: '', bookingCode: '', company: '',
@@ -70,8 +72,8 @@ export function Transports() {
                   {t.origin} → {t.destination}
                 </p>
                 <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 space-y-0.5">
-                  <p>Salida: {t.departureDate} {t.departureTime && `a las ${t.departureTime}`}</p>
-                  <p>Llegada: {t.arrivalDate} {t.arrivalTime && `a las ${t.arrivalTime}`}</p>
+                  <p>Salida: {fmtDate(t.departureDate)} {t.departureTime && `a las ${t.departureTime}`}</p>
+                  <p>Llegada: {fmtDate(t.arrivalDate)} {t.arrivalTime && `a las ${t.arrivalTime}`}</p>
                   {t.notes && <p className="text-blue-600 dark:text-blue-400 mt-1">{t.notes}</p>}
                 </div>
               </div>

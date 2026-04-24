@@ -7,6 +7,8 @@ import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import type { Expense } from '../../types'
 
+const fmtDate = (d: string) => d ? d.split('-').reverse().join('/') : ''
+
 const EMPTY: Omit<Expense, 'id'> = {
   concept: '', date: '', detail: '', price: 0, paid: 0, reserved: false, currency: 'USD',
 }
@@ -88,7 +90,7 @@ export function Expenses() {
                   </div>
                   {e.detail && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{e.detail}</p>}
                   <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {e.date && <span>{e.date}</span>}
+                    {e.date && <span>{fmtDate(e.date)}</span>}
                     <span className="text-gray-900 dark:text-white font-medium">{e.currency} {mask.amount2(e.price)}</span>
                     {e.paid > 0 && <span className="text-green-600 dark:text-green-400">Pag: {e.currency} {mask.amount2(e.paid)}</span>}
                   </div>
