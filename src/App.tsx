@@ -22,7 +22,9 @@ function shareTrip(trip: Trip) {
   const blob = new Blob([json], { type: 'application/json' })
   const file = new File([blob], `${trip.name.replace(/\s+/g, '_')}.json`, { type: 'application/json' })
   if (navigator.canShare?.({ files: [file] })) {
-    navigator.share({ files: [file], title: trip.name }).catch(() => {})
+    navigator.share({ files: [file], title: trip.name }).catch(err => {
+    console.log("Error al compartir:", err);
+})
   } else {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
