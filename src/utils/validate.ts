@@ -8,30 +8,32 @@ export function validateItinerary(
   transports: Transport[],
   itinerary: ItineraryDay[]
 ): ItineraryConflict[] {
-  const conflicts: ItineraryConflict[] = []
-  const dayMap = new Map<string, string>()
-  for (const day of itinerary) {
-    dayMap.set(day.date, day.city)
+  const dayCity = new Map<string, string>()
+  for (const d of itinerary) {
+    if (d.city) dayCity.set(d.date, d.city)
   }
 
+  const validCities = new Map<string, Set<string>>()
+  const addValid = (date: string, city: string) => {
+    if (!date || !city) return
+    if (!validCities.has(date)) validCities.set(date, new Set())
+    validCities.get(date)!.add(normalize(city))
+  }
   for (const t of transports) {
-    if (!t.origin || !t.destination) continue
+    addValid(t.departureDate, t.origin)
+    addValid(t.arrivalDate, t.destination)
+  }
 
-    const depCity = dayMap.get(t.departureDate)
-    if (depCity && normalize(depCity) !== normalize(t.origin)) {
-      conflicts.push({
-        date: t.departureDate,
-        message: `${t.departureDate}: itinerario dice "${depCity}" pero el ${t.type} sale desde "${t.origin}"`,
-      })
-    }
-
-    const arrCity = dayMap.get(t.arrivalDate)
-    if (arrCity && normalize(arrCity) !== normalize(t.destination)) {
-      conflicts.push({
-        date: t.arrivalDate,
-        message: `${t.arrivalDate}: itinerario dice "${arrCity}" pero el ${t.type} llega a "${t.destination}"`,
-      })
-    }
+  const conflicts: ItineraryConflict[] = []
+  for (const [date, city] of dayCity) {
+    const valid = validCities.get(date)
+    if (!valid || valid.has(normalize(city))) continue
+    const validList = [...valid].join('" / "')
+    const [, m, d] = date.split('-')
+    conflicts.push({
+      date,
+      message: `${d}/${m}: itinerario dice "${city}" pero los transportes pasan por "${validList}"`,
+    })
   }
 
   return conflicts
