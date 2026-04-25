@@ -39,6 +39,15 @@ export function Itinerary() {
     return m
   }, [trip.itinerary])
 
+  const cityColorMap = useMemo(() => {
+    const map = new Map<string, number>()
+    const sorted = [...trip.itinerary].sort((a, b) => a.date.localeCompare(b.date))
+    for (const d of sorted) {
+      if (d.city && !map.has(d.city)) map.set(d.city, map.size % DAY_COLORS.length)
+    }
+    return map
+  }, [trip.itinerary])
+
   const cityNights = useMemo(() => {
     const map = new Map<string, number>()
     for (const d of trip.itinerary) {
@@ -139,6 +148,10 @@ export function Itinerary() {
               const inRange = isInRange(day)
               const data = dayMap.get(dateStr)
               const hasConflict = conflictDates.has(dateStr)
+              const cityIdx = data?.city !== undefined ? cityColorMap.get(data.city) : undefined
+              const colorCls = cityIdx !== undefined
+                ? DAY_COLORS[cityIdx]
+                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
               return (
                 <button
                   key={di}
@@ -146,7 +159,7 @@ export function Itinerary() {
                   disabled={!inRange}
                   className={`rounded-xl border p-1.5 text-left min-h-[72px] transition-all ${
                     inRange
-                      ? `${DAY_COLORS[di]} cursor-pointer hover:shadow-sm active:scale-95 ${hasConflict ? 'ring-2 ring-red-400' : ''}`
+                      ? `${colorCls} cursor-pointer hover:shadow-sm active:scale-95 ${hasConflict ? 'ring-2 ring-red-400' : ''}`
                       : 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700 opacity-30 cursor-default'
                   }`}
                 >
