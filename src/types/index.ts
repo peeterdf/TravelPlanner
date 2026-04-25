@@ -91,6 +91,7 @@ export interface Trip {
   expenses: Expense[]
   expenseSplits: ExpenseSplit[]
   packingList: PackingCategory[]
+  notes: string
 }
 
 export interface ItineraryConflict {

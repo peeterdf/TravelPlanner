@@ -245,5 +245,6 @@ export function buildDemoTrip(): Trip {
     ],
 
     packingList: DEFAULT_PACKING_CATEGORIES(),
+    notes: '',
   }
 }

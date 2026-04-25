@@ -18,6 +18,7 @@ interface TripsState {
   importTrip: (trip: Trip) => void
   deleteTrip: (id: string) => void
   updateTrip: (id: string, partial: Partial<Pick<Trip, 'name' | 'startDate' | 'endDate'>>) => void
+  setNotes: (tripId: string, notes: string) => void
 
   // Travelers
   addTraveler: (tripId: string, name: string) => void
@@ -87,6 +88,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       expenses: [],
       expenseSplits: [],
       packingList: DEFAULT_PACKING_CATEGORIES(),
+      notes: '',
     }
     const trips = [...get().trips, trip]
     persist(trips)
@@ -95,10 +97,11 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   },
 
   importTrip: (trip) => {
-    const existing = get().trips.find(t => t.id === trip.id)
+    const normalized: Trip = { ...trip, notes: trip.notes ?? '' }
+    const existing = get().trips.find(t => t.id === normalized.id)
     const trips = existing
-      ? get().trips.map(t => t.id === trip.id ? trip : t)
-      : [...get().trips, trip]
+      ? get().trips.map(t => t.id === normalized.id ? normalized : t)
+      : [...get().trips, normalized]
     persist(trips)
     set({ trips })
   },
@@ -111,6 +114,12 @@ export const useTripsStore = create<TripsState>((set, get) => ({
 
   updateTrip: (id, partial) => {
     const trips = get().trips.map(t => t.id === id ? { ...t, ...partial } : t)
+    persist(trips)
+    set({ trips })
+  },
+
+  setNotes: (tripId, notes) => {
+    const trips = get().trips.map(t => t.id === tripId ? { ...t, notes } : t)
     persist(trips)
     set({ trips })
   },
