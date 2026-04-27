@@ -14,6 +14,7 @@ import { ExpenseSplitPage } from './pages/trip/ExpenseSplit'
 import { Packing } from './pages/trip/Packing'
 import { More } from './pages/trip/More'
 import { Notes } from './pages/trip/Notes'
+import { Audit } from './pages/trip/Audit'
 import { Header } from './components/layout/Header'
 import { BottomNav } from './components/layout/BottomNav'
 import type { Trip } from './types'
@@ -48,6 +49,7 @@ const SECTION_TITLES: Record<string, string> = {
   checklist: 'Checklist',
   splits: 'División de gastos',
   notas: 'Notas',
+  auditoria: 'Auditoría',
   mas: 'Más',
 }
 
@@ -65,7 +67,7 @@ function TripLayout() {
 
   const title = SECTION_TITLES[section] ?? ''
 
-  const SUB_SECTIONS = new Set(['actividades', 'checklist', 'splits', 'notas'])
+  const SUB_SECTIONS = new Set(['actividades', 'checklist', 'splits', 'notas', 'auditoria'])
   const backTo = SUB_SECTIONS.has(section)
     ? `/viaje/${tripId}/mas`
     : '/'
@@ -114,6 +116,7 @@ function TripLayout() {
           <Route path="splits" element={<ExpenseSplitPage />} />
           <Route path="checklist" element={<Packing />} />
           <Route path="notas" element={<Notes />} />
+          <Route path="auditoria" element={<Audit />} />
           <Route path="mas" element={<More />} />
           <Route path="*" element={<Navigate to="transportes" replace />} />
         </Routes>
