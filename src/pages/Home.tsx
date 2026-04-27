@@ -82,7 +82,7 @@ export function Home() {
     try {
       await syncToCloud(tripId)
       setSyncCode(tripId)
-    } catch { alert('Error al sincronizar. Verificá la configuración de Firebase.') }
+    } catch (err) { alert(`Error al sincronizar:\n${err instanceof Error ? err.message : String(err)}`) }
     finally { setSyncingId(null) }
   }
 
