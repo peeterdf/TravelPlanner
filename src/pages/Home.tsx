@@ -76,12 +76,14 @@ export function Home() {
     navigate('/viaje/demo-europa-2024/transportes')
   }
 
-  const handleSync = async (e: React.MouseEvent, tripId: string) => {
+  const handleSync = async (e: React.MouseEvent, trip: { id: string; cloudCode?: string }) => {
     e.stopPropagation()
-    setSyncingId(tripId)
+    if (trip.cloudCode) { setSyncCode(trip.cloudCode); return }
+    setSyncingId(trip.id)
     try {
-      await syncToCloud(tripId)
-      setSyncCode(tripId)
+      await syncToCloud(trip.id)
+      const updated = trips.find(t => t.id === trip.id)
+      if (updated?.cloudCode) setSyncCode(updated.cloudCode)
     } catch (err) { alert(`Error al sincronizar:\n${err instanceof Error ? err.message : String(err)}`) }
     finally { setSyncingId(null) }
   }
@@ -99,11 +101,11 @@ export function Home() {
     setJoining(true)
     setJoinError('')
     try {
-      const ok = await joinTrip(joinCode.trim())
-      if (ok) {
+      const tripId = await joinTrip(joinCode.trim())
+      if (tripId) {
         setShowJoin(false)
         setJoinCode('')
-        navigate(`/viaje/${joinCode.trim()}/transportes`)
+        navigate(`/viaje/${tripId}/transportes`)
       } else {
         setJoinError('No se encontró un viaje con ese código.')
       }
@@ -198,23 +200,14 @@ export function Home() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  {cloudEnabled && !trip.synced && (
+                  {cloudEnabled && (
                     <button
-                      onClick={(e) => handleSync(e, trip.id)}
+                      onClick={(e) => handleSync(e, trip)}
                       disabled={syncingId === trip.id}
-                      className="p-2 text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors disabled:opacity-40"
-                      aria-label="Sincronizar en la nube"
+                      className={`p-2 transition-colors disabled:opacity-40 ${trip.synced ? 'text-green-500 dark:text-green-400' : 'text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'}`}
+                      aria-label={trip.synced ? 'Ver código de sincronización' : 'Sincronizar en la nube'}
                     >
-                      <CloudUpload size={17} />
-                    </button>
-                  )}
-                  {cloudEnabled && trip.synced && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setSyncCode(trip.id) }}
-                      className="p-2 text-green-500 dark:text-green-400"
-                      aria-label="Ver código de sincronización"
-                    >
-                      <Cloud size={17} />
+                      {trip.synced ? <Cloud size={17} /> : <CloudUpload size={17} />}
                     </button>
                   )}
                   <button

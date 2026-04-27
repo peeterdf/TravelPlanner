@@ -93,6 +93,7 @@ export interface Trip {
   packingList: PackingCategory[]
   notes: string
   synced?: boolean
+  cloudCode?: string
 }
 
 export interface ItineraryConflict {
