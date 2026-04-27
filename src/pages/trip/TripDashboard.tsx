@@ -68,25 +68,32 @@ export function TripDashboard() {
           </div>
         )}
 
-        {daysUntilStart !== null && daysUntilStart > 0 && (
-          <div className="mt-3 flex items-baseline gap-2 bg-white/15 rounded-xl px-3 py-2 w-fit">
-            <span className="text-3xl font-extrabold leading-none">{daysUntilStart}</span>
-            <span className="text-blue-100 text-sm">días para el viaje</span>
-          </div>
-        )}
-        {daysUntilStart === 0 && (
-          <div className="mt-3 bg-white/15 rounded-xl px-3 py-2 w-fit text-sm font-semibold">
-            ¡Hoy empieza el viaje!
-          </div>
-        )}
-        {daysUntilStart !== null && daysUntilStart < 0 && daysUntilEnd !== null && daysUntilEnd >= 0 && (
-          <div className="mt-3 flex items-baseline gap-2 bg-white/15 rounded-xl px-3 py-2 w-fit">
-            <span className="text-sm font-semibold text-blue-100">En curso</span>
-            {totalDays && (
-              <span className="text-xs text-blue-200">día {Math.abs(daysUntilStart) + 1} de {totalDays}</span>
-            )}
-          </div>
-        )}
+        {daysUntilStart !== null && (() => {
+          if (daysUntilStart > 0) return (
+            <div className="mt-3 flex items-baseline gap-2 bg-white/15 rounded-xl px-3 py-2 w-fit">
+              <span className="text-3xl font-extrabold leading-none">{daysUntilStart}</span>
+              <span className="text-blue-100 text-sm">días para el viaje</span>
+            </div>
+          )
+          if (daysUntilStart === 0) return (
+            <div className="mt-3 bg-white/15 rounded-xl px-3 py-2 w-fit text-sm font-semibold">
+              ¡Hoy empieza el viaje!
+            </div>
+          )
+          if (daysUntilEnd !== null && daysUntilEnd >= 0) return (
+            <div className="mt-3 flex items-baseline gap-2 bg-white/15 rounded-xl px-3 py-2 w-fit">
+              <span className="text-sm font-semibold text-blue-100">En curso</span>
+              {totalDays && (
+                <span className="text-xs text-blue-200">día {Math.abs(daysUntilStart) + 1} de {totalDays}</span>
+              )}
+            </div>
+          )
+          return (
+            <div className="mt-3 bg-white/15 rounded-xl px-3 py-2 w-fit text-sm text-blue-200">
+              Viaje finalizado
+            </div>
+          )
+        })()}
       </div>
 
       {/* Validation indicator */}
