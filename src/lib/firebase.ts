@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app'
-import { initializeFirestore, persistentLocalCache } from 'firebase/firestore'
+import { getFirestore } from 'firebase/firestore'
 
 const app = initializeApp({
   apiKey: 'AIzaSyAH_lsPaig4CrSosY5iUEzTWB3NjSrVerA',
@@ -8,5 +8,5 @@ const app = initializeApp({
   appId: '1:562229044568:web:d205164d946cf833dc712d',
 })
 
-export const db = initializeFirestore(app, { localCache: persistentLocalCache() })
+export const db = getFirestore(app)
 export const cloudEnabled = true
