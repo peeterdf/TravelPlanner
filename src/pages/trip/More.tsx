@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Star, CheckSquare, Users, FileText, ClipboardList, ArrowRight } from 'lucide-react'
+import { Star, CheckSquare, FileText, ClipboardList, ArrowRight } from 'lucide-react'
 
 export function More() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -7,7 +7,6 @@ export function More() {
   const items = [
     { icon: Star, label: 'Actividades', desc: 'Lugares y planes por día', to: 'actividades', color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/30 dark:text-pink-400' },
     { icon: CheckSquare, label: 'Checklist equipaje', desc: 'Listas de packing por categoría', to: 'checklist', color: 'text-teal-600 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-400' },
-    { icon: Users, label: 'División de gastos', desc: 'Quién pagó qué y deudas', to: 'splits', color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' },
     { icon: FileText, label: 'Notas', desc: 'Direcciones, tips y recordatorios', to: 'notas', color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400' },
     { icon: ClipboardList, label: 'Auditoría', desc: 'Historial de cambios del viaje', to: 'auditoria', color: 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-300' },
   ]

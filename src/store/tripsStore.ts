@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type {
   Trip, Transport, Accommodation, ItineraryDay,
-  Activity, Expense, ExpenseSplit, AuditEntry, AuditAction
+  Activity, Expense, AuditEntry, AuditAction
 } from '../types'
 import { loadTrips, saveTrips } from '../utils/storage'
 import { DEFAULT_PACKING_CATEGORIES } from '../utils/validate'
@@ -17,6 +17,24 @@ function mkAudit(action: AuditAction, section: string, description: string): Aud
 
 function withAudit(trip: Trip, entry: AuditEntry): Trip {
   return { ...trip, auditLog: [...(trip.auditLog ?? []), entry].slice(-300) }
+}
+
+function migrateExpenseSplits(trip: Trip): Trip {
+  if (!trip.expenseSplits?.length) return trip
+  const migrated = [...trip.expenses]
+  for (const s of trip.expenseSplits) {
+    const exists = migrated.some(e =>
+      e.concept === s.concept && e.currency === s.currency &&
+      e.price === s.amount && e.paidBy === s.paidBy
+    )
+    if (!exists) migrated.push({
+      id: genId(), concept: s.concept, date: '', detail: '',
+      price: s.amount, paid: s.amount, reserved: false,
+      currency: s.currency, paidBy: s.paidBy,
+      includedTravelers: s.includedTravelers,
+    })
+  }
+  return { ...trip, expenses: migrated, expenseSplits: [] }
 }
 
 interface TripsState {
@@ -57,11 +75,6 @@ interface TripsState {
   updateExpense: (tripId: string, e: Expense) => void
   deleteExpense: (tripId: string, expenseId: string) => void
 
-  // Expense splits
-  addSplit: (tripId: string, s: Omit<ExpenseSplit, 'id'>) => void
-  updateSplit: (tripId: string, s: ExpenseSplit) => void
-  deleteSplit: (tripId: string, splitId: string) => void
-
   // Packing
   togglePackingItem: (tripId: string, categoryId: string, itemId: string) => void
   addPackingItem: (tripId: string, categoryId: string, name: string) => void
@@ -93,10 +106,11 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
   unsubscribers.get(trip.id)?.()
   const unsub = subscribeTrip(trip.cloudCode, trip.id, (remote) => {
     const local = get().trips.find(t => t.id === trip.id)
+    const migrated = migrateExpenseSplits(remote)
     const merged: Trip = local
       ? {
-          ...remote,
-          packingList: remote.packingList.map(remoteCat => {
+          ...migrated,
+          packingList: migrated.packingList.map(remoteCat => {
             const localCat = local.packingList.find(c => c.id === remoteCat.id)
             if (!localCat) return remoteCat
             return {
@@ -108,7 +122,7 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
             }
           }),
         }
-      : remote
+      : migrated
     set({ trips: get().trips.map(t => t.id === trip.id ? merged : t) })
     saveTrips(get().trips).catch(console.error)
   })
@@ -121,7 +135,14 @@ export const useTripsStore = create<TripsState>((set, get) => ({
 
   load: async () => {
     if (get().loaded) return
-    const trips = await loadTrips()
+    let trips = await loadTrips()
+    let needsSave = false
+    trips = trips.map(t => {
+      if (!t.expenseSplits?.length) return t
+      needsSave = true
+      return migrateExpenseSplits(t)
+    })
+    if (needsSave) saveTrips(trips).catch(console.error)
     set({ trips, loaded: true })
     for (const trip of trips) {
       if (trip.synced && trip.cloudCode) attachListener(trip, get, set)
@@ -153,7 +174,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   },
 
   importTrip: (trip) => {
-    const normalized: Trip = { ...trip, notes: trip.notes ?? '', auditLog: trip.auditLog ?? [] }
+    const normalized: Trip = migrateExpenseSplits({ ...trip, notes: trip.notes ?? '', auditLog: trip.auditLog ?? [] })
     const existing = get().trips.find(t => t.id === normalized.id)
     const trips = existing
       ? get().trips.map(t => t.id === normalized.id ? normalized : t)
@@ -317,7 +338,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   addExpense: (tripId, e) => {
     const trips = get().trips.map(t => {
       if (t.id !== tripId) return t
-      const desc = `${e.concept} ${e.currency} ${e.price}`
+      const desc = `${e.concept} ${e.currency} ${e.price}${e.paidBy ? ` por ${e.paidBy}` : ''}`
       return withAudit({ ...t, expenses: [...t.expenses, { ...e, id: genId() }] }, mkAudit('add', 'gasto', desc))
     })
     persist(trips)
@@ -327,7 +348,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   updateExpense: (tripId, e) => {
     const trips = get().trips.map(t => {
       if (t.id !== tripId) return t
-      const desc = `${e.concept} ${e.currency} ${e.price}`
+      const desc = `${e.concept} ${e.currency} ${e.price}${e.paidBy ? ` por ${e.paidBy}` : ''}`
       return withAudit({ ...t, expenses: t.expenses.map(ex => ex.id === e.id ? e : ex) }, mkAudit('update', 'gasto', desc))
     })
     persist(trips)
@@ -340,37 +361,6 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       const e = t.expenses.find(e => e.id === expenseId)
       const desc = e ? `${e.concept} ${e.currency} ${e.price}` : expenseId
       return withAudit({ ...t, expenses: t.expenses.filter(e => e.id !== expenseId) }, mkAudit('delete', 'gasto', desc))
-    })
-    persist(trips)
-    set({ trips })
-  },
-
-  addSplit: (tripId, s) => {
-    const trips = get().trips.map(t => {
-      if (t.id !== tripId) return t
-      const desc = `${s.concept} por ${s.paidBy}`
-      return withAudit({ ...t, expenseSplits: [...t.expenseSplits, { ...s, id: genId() }] }, mkAudit('add', 'división', desc))
-    })
-    persist(trips)
-    set({ trips })
-  },
-
-  updateSplit: (tripId, s) => {
-    const trips = get().trips.map(t => {
-      if (t.id !== tripId) return t
-      const desc = `${s.concept} por ${s.paidBy}`
-      return withAudit({ ...t, expenseSplits: t.expenseSplits.map(sp => sp.id === s.id ? s : sp) }, mkAudit('update', 'división', desc))
-    })
-    persist(trips)
-    set({ trips })
-  },
-
-  deleteSplit: (tripId, splitId) => {
-    const trips = get().trips.map(t => {
-      if (t.id !== tripId) return t
-      const s = t.expenseSplits.find(s => s.id === splitId)
-      const desc = s ? `${s.concept} por ${s.paidBy}` : splitId
-      return withAudit({ ...t, expenseSplits: t.expenseSplits.filter(s => s.id !== splitId) }, mkAudit('delete', 'división', desc))
     })
     persist(trips)
     set({ trips })
@@ -440,7 +430,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   joinTrip: async (code) => {
     const remote = await fetchTrip(code)
     if (!remote) return null
-    const base = { ...remote, synced: true, cloudCode: code.trim().toLowerCase() }
+    const base = { ...migrateExpenseSplits(remote), synced: true, cloudCode: code.trim().toLowerCase() }
     const trips = get().trips.some(t => t.id === base.id)
       ? get().trips.map(t => t.id === base.id ? base : t)
       : [...get().trips, base]

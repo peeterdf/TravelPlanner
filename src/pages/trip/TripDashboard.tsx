@@ -4,7 +4,7 @@ import { useTripsStore } from '../../store/tripsStore'
 import { useSettingsStore, useMask } from '../../store/settingsStore'
 import { validateItinerary } from '../../utils/validate'
 import { differenceInDays, differenceInCalendarDays } from 'date-fns'
-import { Plane, Calendar, Building2, Wallet, CheckSquare, AlertTriangle, CheckCircle, Users, Activity, ArrowRight } from 'lucide-react'
+import { Plane, Calendar, Building2, Wallet, CheckSquare, AlertTriangle, CheckCircle, Users, Activity } from 'lucide-react'
 
 function formatDate(d: string) {
   const [, m, day] = d.split('-')
@@ -169,22 +169,6 @@ export function TripDashboard() {
         ))}
       </div>
 
-      {/* Splits shortcut */}
-      <button
-        onClick={() => navigate(`/viaje/${tripId}/splits`)}
-        className="w-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-            <Users size={20} />
-          </div>
-          <div className="text-left">
-            <p className="text-xs text-gray-500 dark:text-gray-400">División de gastos</p>
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">{trip.expenseSplits.length} registros</p>
-          </div>
-        </div>
-        <ArrowRight size={16} className="text-gray-400 dark:text-gray-500" />
-      </button>
     </div>
   )
 }

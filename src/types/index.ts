@@ -56,6 +56,8 @@ export interface Expense {
   paid: number
   reserved: boolean
   currency: string
+  paidBy?: string
+  includedTravelers?: string[]
 }
 
 export interface ExpenseSplit {
@@ -100,7 +102,7 @@ export interface Trip {
   itinerary: ItineraryDay[]
   activities: Activity[]
   expenses: Expense[]
-  expenseSplits: ExpenseSplit[]
+  expenseSplits?: ExpenseSplit[]
   packingList: PackingCategory[]
   notes: string
   auditLog?: AuditEntry[]
