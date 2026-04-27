@@ -1,10 +1,10 @@
 import { NavLink, useParams } from 'react-router-dom'
-import { Plane, Calendar, Building2, Wallet, MoreHorizontal } from 'lucide-react'
+import { LayoutDashboard, Plane, Calendar, Wallet, MoreHorizontal } from 'lucide-react'
 
 const tabs = [
+  { to: 'dashboard', icon: LayoutDashboard, label: 'Resumen' },
   { to: 'transportes', icon: Plane, label: 'Tramos' },
   { to: 'itinerario', icon: Calendar, label: 'Itinerario' },
-  { to: 'alojamiento', icon: Building2, label: 'Alojam.' },
   { to: 'gastos', icon: Wallet, label: 'Gastos' },
   { to: 'mas', icon: MoreHorizontal, label: 'Más' },
 ]

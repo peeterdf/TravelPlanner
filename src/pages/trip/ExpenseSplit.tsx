@@ -7,7 +7,7 @@ import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import type { ExpenseSplit } from '../../types'
 
-const EMPTY: Omit<ExpenseSplit, 'id'> = { concept: '', paidBy: '', currency: 'USD', amount: 0 }
+const EMPTY: Omit<ExpenseSplit, 'id'> = { concept: '', paidBy: '', currency: 'USD', amount: 0, includedTravelers: [] }
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
 const labelCls = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1'
@@ -23,8 +23,17 @@ export function ExpenseSplitPage() {
 
   if (!trip) return null
 
-  const openAdd = () => { setForm(EMPTY); setModal('add') }
-  const openEdit = (s: ExpenseSplit) => { setForm({ ...s }); setEditId(s.id); setModal('edit') }
+  const travelerNames = trip.travelers.map(t => t.name)
+
+  const openAdd = () => {
+    setForm({ ...EMPTY, includedTravelers: [...travelerNames] })
+    setModal('add')
+  }
+  const openEdit = (s: ExpenseSplit) => {
+    setForm({ ...s, includedTravelers: s.includedTravelers ?? [...travelerNames] })
+    setEditId(s.id)
+    setModal('edit')
+  }
 
   const handleSave = () => {
     if (!form.concept || !form.paidBy) return
@@ -33,51 +42,44 @@ export function ExpenseSplitPage() {
     setModal(null)
   }
 
-  const f = (field: keyof Omit<ExpenseSplit, 'id'>, val: string | number) =>
+  const f = (field: keyof Omit<ExpenseSplit, 'id'>, val: string | number | string[]) =>
     setForm(p => ({ ...p, [field]: val }))
 
-  const byPerson = trip.expenseSplits.reduce<Record<string, number>>((acc, s) => {
-    acc[s.paidBy] = (acc[s.paidBy] ?? 0) + s.amount
-    return acc
-  }, {})
+  const toggleIncluded = (name: string) => {
+    const current = form.includedTravelers ?? []
+    f('includedTravelers', current.includes(name) ? current.filter(n => n !== name) : [...current, name])
+  }
 
-  const grandTotal = Object.values(byPerson).reduce((a, b) => a + b, 0)
-  const perPerson = grandTotal / (Object.keys(byPerson).length || 1)
-  const travelerNames = trip.travelers.map(t => t.name)
+  // Net balance: paid - owed per person
+  const netBalance: Record<string, number> = {}
+  for (const s of trip.expenseSplits) {
+    const included = s.includedTravelers?.length ? s.includedTravelers : travelerNames
+    const share = included.length > 0 ? s.amount / included.length : 0
+    netBalance[s.paidBy] = (netBalance[s.paidBy] ?? 0) + s.amount
+    for (const person of included) {
+      netBalance[person] = (netBalance[person] ?? 0) - share
+    }
+  }
 
   return (
     <div className="p-4 space-y-4 pb-28">
       {/* Summary */}
-      {Object.keys(byPerson).length > 0 && (
+      {Object.keys(netBalance).length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Resumen por persona</p>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Balance por persona</p>
           <div className="space-y-2">
-            {Object.entries(byPerson).sort((a, b) => b[1] - a[1]).map(([person, total]) => {
-              const diff = total - perPerson
-              return (
-                <div key={person} className="flex items-center justify-between">
-                  <span className="font-medium text-gray-900 dark:text-white text-sm">{mask.name(person)}</span>
-                  <div className="text-right">
-                    <span className="font-bold text-gray-900 dark:text-white text-sm">{mask.amount(total)}</span>
-                    <span className={`ml-2 text-xs font-medium ${diff > 0.5 ? 'text-green-600 dark:text-green-400' : diff < -0.5 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>
-                      {diff > 0.5
-                        ? `le deben ${mask.amount(diff)}`
-                        : diff < -0.5
-                          ? `debe ${mask.amount(Math.abs(diff))}`
-                          : '✓ par'}
-                    </span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-          <div className="border-t border-gray-100 dark:border-gray-700 mt-3 pt-3 flex justify-between text-sm">
-            <span className="text-gray-500 dark:text-gray-400">Total grupal</span>
-            <span className="font-bold text-gray-900 dark:text-white">{mask.amount(grandTotal)}</span>
-          </div>
-          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-            <span>Por persona ({Object.keys(byPerson).length} viajeros)</span>
-            <span className="font-medium">{mask.amount(perPerson)}</span>
+            {Object.entries(netBalance).sort((a, b) => b[1] - a[1]).map(([person, net]) => (
+              <div key={person} className="flex items-center justify-between">
+                <span className="font-medium text-gray-900 dark:text-white text-sm">{mask.name(person)}</span>
+                <span className={`text-xs font-medium ${net > 0.5 ? 'text-green-600 dark:text-green-400' : net < -0.5 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>
+                  {net > 0.5
+                    ? `le deben ${mask.amount(net)}`
+                    : net < -0.5
+                      ? `debe ${mask.amount(Math.abs(net))}`
+                      : '✓ par'}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -92,21 +94,32 @@ export function ExpenseSplitPage() {
         />
       ) : (
         <div className="space-y-2">
-          {trip.expenseSplits.map(s => (
-            <div key={s.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-3 flex items-center justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{s.concept}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Pagó: <span className="font-semibold text-gray-700 dark:text-gray-300">{mask.name(s.paidBy)}</span>
-                  {' · '}<span className="font-medium">{s.currency} {mask.amount(s.amount)}</span>
-                </p>
+          {trip.expenseSplits.map(s => {
+            const included = s.includedTravelers?.length ? s.includedTravelers : travelerNames
+            return (
+              <div key={s.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-3 flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{s.concept}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    Pagó <span className="font-semibold text-gray-700 dark:text-gray-300">{mask.name(s.paidBy)}</span>
+                    {' · '}<span className="font-medium">{s.currency} {mask.amount(s.amount)}</span>
+                  </p>
+                  {included.length > 0 && included.length < travelerNames.length && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                      Incluye: {included.map(n => mask.name(n)).join(', ')}
+                    </p>
+                  )}
+                  {included.length === travelerNames.length && travelerNames.length > 0 && (
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Todos los viajeros</p>
+                  )}
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <button onClick={() => openEdit(s)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><Pencil size={15} /></button>
+                  <button onClick={() => deleteSplit(tripId!, s.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
+                </div>
               </div>
-              <div className="flex gap-1 shrink-0">
-                <button onClick={() => openEdit(s)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><Pencil size={15} /></button>
-                <button onClick={() => deleteSplit(tripId!, s.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -143,6 +156,22 @@ export function ExpenseSplitPage() {
                   value={form.paidBy} onChange={e => f('paidBy', e.target.value)} />
               )}
             </div>
+            {travelerNames.length > 0 && (
+              <div>
+                <label className={labelCls}>Incluye a</label>
+                <div className="flex flex-wrap gap-2">
+                  {travelerNames.map(n => {
+                    const included = form.includedTravelers ?? []
+                    return (
+                      <button key={n} onClick={() => toggleIncluded(n)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${included.includes(n) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                        {n}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Monto</label>

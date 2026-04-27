@@ -45,7 +45,7 @@ export function Home() {
     const id = addTrip(name.trim(), startDate, endDate, travelers)
     setShowNew(false)
     setName(''); setStartDate(''); setEndDate(''); setTravelersRaw('')
-    navigate(`/viaje/${id}/transportes`)
+    navigate(`/viaje/${id}/dashboard`)
   }
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
@@ -62,7 +62,7 @@ export function Home() {
         const trip = JSON.parse(ev.target?.result as string)
         if (!trip?.id || !trip?.name) { alert('Archivo inválido'); return }
         importTrip(trip)
-        navigate(`/viaje/${trip.id}/transportes`)
+        navigate(`/viaje/${trip.id}/dashboard`)
       } catch { alert('No se pudo leer el archivo') }
     }
     reader.readAsText(file)
@@ -71,9 +71,9 @@ export function Home() {
 
   const handleLoadDemo = () => {
     const already = trips.find(t => t.id === 'demo-europa-2024')
-    if (already) { navigate(`/viaje/demo-europa-2024/transportes`); return }
+    if (already) { navigate(`/viaje/demo-europa-2024/dashboard`); return }
     importTrip(buildDemoTrip())
-    navigate('/viaje/demo-europa-2024/transportes')
+    navigate('/viaje/demo-europa-2024/dashboard')
   }
 
   const handleSync = async (e: React.MouseEvent, trip: { id: string; cloudCode?: string }) => {
@@ -105,7 +105,7 @@ export function Home() {
       if (tripId) {
         setShowJoin(false)
         setJoinCode('')
-        navigate(`/viaje/${tripId}/transportes`)
+        navigate(`/viaje/${tripId}/dashboard`)
       } else {
         setJoinError('No se encontró un viaje con ese código.')
       }
@@ -173,7 +173,7 @@ export function Home() {
           trips.map(trip => (
             <div
               key={trip.id}
-              onClick={() => navigate(`/viaje/${trip.id}/transportes`)}
+              onClick={() => navigate(`/viaje/${trip.id}/dashboard`)}
               className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 cursor-pointer hover:shadow-md transition-shadow active:scale-[0.99]"
             >
               <div className="flex items-start justify-between gap-2">

@@ -64,6 +64,7 @@ export interface ExpenseSplit {
   paidBy: string
   currency: string
   amount: number
+  includedTravelers?: string[]
 }
 
 export interface PackingItem {
