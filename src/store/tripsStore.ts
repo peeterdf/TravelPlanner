@@ -84,11 +84,32 @@ function persist(trips: Trip[]) {
   }
 }
 
+function persistLocal(trips: Trip[]) {
+  saveTrips(trips).catch(console.error)
+}
+
 function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<TripsState>) => void) {
   if (!trip.cloudCode) return
   unsubscribers.get(trip.id)?.()
   const unsub = subscribeTrip(trip.cloudCode, trip.id, (remote) => {
-    set({ trips: get().trips.map(t => t.id === trip.id ? remote : t) })
+    const local = get().trips.find(t => t.id === trip.id)
+    const merged: Trip = local
+      ? {
+          ...remote,
+          packingList: remote.packingList.map(remoteCat => {
+            const localCat = local.packingList.find(c => c.id === remoteCat.id)
+            if (!localCat) return remoteCat
+            return {
+              ...remoteCat,
+              items: remoteCat.items.map(ri => {
+                const li = localCat.items.find(i => i.id === ri.id)
+                return li ? { ...ri, checked: li.checked } : ri
+              }),
+            }
+          }),
+        }
+      : remote
+    set({ trips: get().trips.map(t => t.id === trip.id ? merged : t) })
     saveTrips(get().trips).catch(console.error)
   })
   unsubscribers.set(trip.id, unsub)
@@ -366,7 +387,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
         }),
       }
     })
-    persist(trips)
+    persistLocal(trips)
     set({ trips })
   },
 
