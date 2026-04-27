@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type {
   Trip, Transport, Accommodation, ItineraryDay,
-  Activity, Expense, ExpenseSplit
+  Activity, Expense, ExpenseSplit, AuditEntry, AuditAction
 } from '../types'
 import { loadTrips, saveTrips } from '../utils/storage'
 import { DEFAULT_PACKING_CATEGORIES } from '../utils/validate'
@@ -9,6 +9,14 @@ import { uploadTrip as cloudUpload, fetchTrip, subscribeTrip, generateCloudCode 
 
 function genId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
+function mkAudit(action: AuditAction, section: string, description: string): AuditEntry {
+  return { id: genId(), timestamp: new Date().toISOString(), action, section, description }
+}
+
+function withAudit(trip: Trip, entry: AuditEntry): Trip {
+  return { ...trip, auditLog: [...(trip.auditLog ?? []), entry].slice(-300) }
 }
 
 interface TripsState {
@@ -115,6 +123,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       expenseSplits: [],
       packingList: DEFAULT_PACKING_CATEGORIES(),
       notes: '',
+      auditLog: [],
     }
     const trips = [...get().trips, trip]
     persist(trips)
@@ -123,7 +132,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   },
 
   importTrip: (trip) => {
-    const normalized: Trip = { ...trip, notes: trip.notes ?? '' }
+    const normalized: Trip = { ...trip, notes: trip.notes ?? '', auditLog: trip.auditLog ?? [] }
     const existing = get().trips.find(t => t.id === normalized.id)
     const trips = existing
       ? get().trips.map(t => t.id === normalized.id ? normalized : t)
@@ -167,49 +176,63 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   },
 
   addTransport: (tripId, transport) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, transports: [...t.transports, { ...transport, id: genId() }] }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const desc = `${transport.origin} → ${transport.destination} (${transport.type})`
+      return withAudit({ ...t, transports: [...t.transports, { ...transport, id: genId() }] }, mkAudit('add', 'transporte', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   updateTransport: (tripId, transport) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, transports: t.transports.map(tr => tr.id === transport.id ? transport : tr) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const desc = `${transport.origin} → ${transport.destination} (${transport.type})`
+      return withAudit({ ...t, transports: t.transports.map(tr => tr.id === transport.id ? transport : tr) }, mkAudit('update', 'transporte', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   deleteTransport: (tripId, transportId) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, transports: t.transports.filter(tr => tr.id !== transportId) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const tr = t.transports.find(tr => tr.id === transportId)
+      const desc = tr ? `${tr.origin} → ${tr.destination} (${tr.type})` : transportId
+      return withAudit({ ...t, transports: t.transports.filter(tr => tr.id !== transportId) }, mkAudit('delete', 'transporte', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   addAccommodation: (tripId, a) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, accommodations: [...t.accommodations, { ...a, id: genId() }] }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const desc = `${a.city} (${a.nights}n)`
+      return withAudit({ ...t, accommodations: [...t.accommodations, { ...a, id: genId() }] }, mkAudit('add', 'alojamiento', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   updateAccommodation: (tripId, a) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, accommodations: t.accommodations.map(ac => ac.id === a.id ? a : ac) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const desc = `${a.city} (${a.nights}n)`
+      return withAudit({ ...t, accommodations: t.accommodations.map(ac => ac.id === a.id ? a : ac) }, mkAudit('update', 'alojamiento', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   deleteAccommodation: (tripId, accommodationId) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, accommodations: t.accommodations.filter(a => a.id !== accommodationId) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const a = t.accommodations.find(a => a.id === accommodationId)
+      const desc = a ? `${a.city} (${a.nights}n)` : accommodationId
+      return withAudit({ ...t, accommodations: t.accommodations.filter(a => a.id !== accommodationId) }, mkAudit('delete', 'alojamiento', desc))
+    })
     persist(trips)
     set({ trips })
   },
@@ -221,88 +244,113 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       const itinerary = exists
         ? t.itinerary.map(d => d.date === day.date ? day : d)
         : [...t.itinerary, day].sort((a, b) => a.date.localeCompare(b.date))
-      return { ...t, itinerary }
+      const [, m, d] = day.date.split('-')
+      const desc = `${d}/${m} → ${day.city}`
+      return withAudit({ ...t, itinerary }, mkAudit(exists ? 'update' : 'add', 'itinerario', desc))
     })
     persist(trips)
     set({ trips })
   },
 
   deleteItineraryDay: (tripId, date) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, itinerary: t.itinerary.filter(d => d.date !== date) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const [, m, d] = date.split('-')
+      return withAudit({ ...t, itinerary: t.itinerary.filter(dy => dy.date !== date) }, mkAudit('delete', 'itinerario', `${d}/${m}`))
+    })
     persist(trips)
     set({ trips })
   },
 
   addActivity: (tripId, a) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, activities: [...t.activities, { ...a, id: genId() }] }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const desc = `${a.place} en ${a.city}`
+      return withAudit({ ...t, activities: [...t.activities, { ...a, id: genId() }] }, mkAudit('add', 'actividad', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   updateActivity: (tripId, a) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, activities: t.activities.map(ac => ac.id === a.id ? a : ac) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const desc = `${a.place} en ${a.city}`
+      return withAudit({ ...t, activities: t.activities.map(ac => ac.id === a.id ? a : ac) }, mkAudit('update', 'actividad', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   deleteActivity: (tripId, activityId) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, activities: t.activities.filter(a => a.id !== activityId) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const a = t.activities.find(a => a.id === activityId)
+      const desc = a ? `${a.place} en ${a.city}` : activityId
+      return withAudit({ ...t, activities: t.activities.filter(a => a.id !== activityId) }, mkAudit('delete', 'actividad', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   addExpense: (tripId, e) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, expenses: [...t.expenses, { ...e, id: genId() }] }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const desc = `${e.concept} ${e.currency} ${e.price}`
+      return withAudit({ ...t, expenses: [...t.expenses, { ...e, id: genId() }] }, mkAudit('add', 'gasto', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   updateExpense: (tripId, e) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, expenses: t.expenses.map(ex => ex.id === e.id ? e : ex) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const desc = `${e.concept} ${e.currency} ${e.price}`
+      return withAudit({ ...t, expenses: t.expenses.map(ex => ex.id === e.id ? e : ex) }, mkAudit('update', 'gasto', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   deleteExpense: (tripId, expenseId) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, expenses: t.expenses.filter(e => e.id !== expenseId) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const e = t.expenses.find(e => e.id === expenseId)
+      const desc = e ? `${e.concept} ${e.currency} ${e.price}` : expenseId
+      return withAudit({ ...t, expenses: t.expenses.filter(e => e.id !== expenseId) }, mkAudit('delete', 'gasto', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   addSplit: (tripId, s) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, expenseSplits: [...t.expenseSplits, { ...s, id: genId() }] }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const desc = `${s.concept} por ${s.paidBy}`
+      return withAudit({ ...t, expenseSplits: [...t.expenseSplits, { ...s, id: genId() }] }, mkAudit('add', 'división', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   updateSplit: (tripId, s) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, expenseSplits: t.expenseSplits.map(sp => sp.id === s.id ? s : sp) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const desc = `${s.concept} por ${s.paidBy}`
+      return withAudit({ ...t, expenseSplits: t.expenseSplits.map(sp => sp.id === s.id ? s : sp) }, mkAudit('update', 'división', desc))
+    })
     persist(trips)
     set({ trips })
   },
 
   deleteSplit: (tripId, splitId) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, expenseSplits: t.expenseSplits.filter(s => s.id !== splitId) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const s = t.expenseSplits.find(s => s.id === splitId)
+      const desc = s ? `${s.concept} por ${s.paidBy}` : splitId
+      return withAudit({ ...t, expenseSplits: t.expenseSplits.filter(s => s.id !== splitId) }, mkAudit('delete', 'división', desc))
+    })
     persist(trips)
     set({ trips })
   },
@@ -325,13 +373,14 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   addPackingItem: (tripId, categoryId, name) => {
     const trips = get().trips.map(t => {
       if (t.id !== tripId) return t
-      return {
+      const updated = {
         ...t,
         packingList: t.packingList.map(cat => cat.id !== categoryId ? cat : {
           ...cat,
           items: [...cat.items, { id: genId(), name, checked: false }],
         }),
       }
+      return withAudit(updated, mkAudit('add', 'checklist', name))
     })
     persist(trips)
     set({ trips })
@@ -340,13 +389,16 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   deletePackingItem: (tripId, categoryId, itemId) => {
     const trips = get().trips.map(t => {
       if (t.id !== tripId) return t
-      return {
+      const cat = t.packingList.find(c => c.id === categoryId)
+      const item = cat?.items.find(i => i.id === itemId)
+      const updated = {
         ...t,
         packingList: t.packingList.map(cat => cat.id !== categoryId ? cat : {
           ...cat,
           items: cat.items.filter(item => item.id !== itemId),
         }),
       }
+      return withAudit(updated, mkAudit('delete', 'checklist', item?.name ?? itemId))
     })
     persist(trips)
     set({ trips })

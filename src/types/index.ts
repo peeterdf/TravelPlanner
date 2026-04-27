@@ -78,6 +78,16 @@ export interface PackingCategory {
   items: PackingItem[]
 }
 
+export type AuditAction = 'add' | 'update' | 'delete'
+
+export interface AuditEntry {
+  id: string
+  timestamp: string
+  action: AuditAction
+  section: string
+  description: string
+}
+
 export interface Trip {
   id: string
   name: string
@@ -92,6 +102,7 @@ export interface Trip {
   expenseSplits: ExpenseSplit[]
   packingList: PackingCategory[]
   notes: string
+  auditLog?: AuditEntry[]
   synced?: boolean
   cloudCode?: string
 }
