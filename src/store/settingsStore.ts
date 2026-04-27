@@ -1,10 +1,23 @@
 import { create } from 'zustand'
 
+export type Theme = 'light' | 'dark' | 'system'
+
 interface SettingsState {
-  darkMode: boolean
+  theme: Theme
   privacyMode: boolean
-  toggleDark: () => void
+  setTheme: (t: Theme) => void
+  cycleTheme: () => void
   togglePrivacy: () => void
+}
+
+const loadTheme = (): Theme => {
+  try {
+    const v = localStorage.getItem('theme')
+    if (v === 'light' || v === 'dark' || v === 'system') return v
+    // migrate old darkMode key
+    const old = localStorage.getItem('darkMode')
+    return old === 'false' ? 'light' : 'dark'
+  } catch { return 'dark' }
 }
 
 const loadBool = (key: string, def = false): boolean => {
@@ -14,14 +27,20 @@ const loadBool = (key: string, def = false): boolean => {
   } catch { return def }
 }
 
-export const useSettingsStore = create<SettingsState>((set) => ({
-  darkMode: loadBool('darkMode', true),
+const CYCLE: Theme[] = ['light', 'dark', 'system']
+
+export const useSettingsStore = create<SettingsState>((set, get) => ({
+  theme: loadTheme(),
   privacyMode: loadBool('privacyMode', false),
-  toggleDark: () => set(s => {
-    const next = !s.darkMode
-    localStorage.setItem('darkMode', String(next))
-    return { darkMode: next }
-  }),
+  setTheme: (theme) => {
+    localStorage.setItem('theme', theme)
+    set({ theme })
+  },
+  cycleTheme: () => {
+    const next = CYCLE[(CYCLE.indexOf(get().theme) + 1) % 3]
+    localStorage.setItem('theme', next)
+    set({ theme: next })
+  },
   togglePrivacy: () => set(s => {
     const next = !s.privacyMode
     localStorage.setItem('privacyMode', String(next))

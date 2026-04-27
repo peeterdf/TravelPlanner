@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
-import { Share2, Moon, Sun, Eye, EyeOff } from 'lucide-react'
+import { Share2, Sun, Moon, Monitor, Eye, EyeOff } from 'lucide-react'
 import { useTripsStore } from './store/tripsStore'
 import { useSettingsStore } from './store/settingsStore'
 import { Home } from './pages/Home'
@@ -63,7 +63,7 @@ function TripLayout() {
 
   const { trips } = useTripsStore()
   const trip = trips.find(t => t.id === tripId)
-  const { darkMode, privacyMode, toggleDark, togglePrivacy } = useSettingsStore()
+  const { theme, privacyMode, cycleTheme, togglePrivacy } = useSettingsStore()
 
   const title = SECTION_TITLES[section] ?? ''
 
@@ -82,11 +82,12 @@ function TripLayout() {
         right={
           <>
             <button
-              onClick={toggleDark}
+              onClick={cycleTheme}
               className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              aria-label={darkMode ? 'Modo claro' : 'Modo oscuro'}
+              aria-label={`Tema: ${theme}`}
+              title={theme === 'light' ? 'Claro' : theme === 'dark' ? 'Oscuro' : 'Sistema'}
             >
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              {theme === 'light' ? <Sun size={18} /> : theme === 'dark' ? <Moon size={18} /> : <Monitor size={18} />}
             </button>
             <button
               onClick={togglePrivacy}
@@ -135,10 +136,18 @@ function AppLoader() {
 }
 
 function ThemeApplier() {
-  const { darkMode } = useSettingsStore()
+  const { theme } = useSettingsStore()
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode)
-  }, [darkMode])
+    if (theme !== 'system') {
+      document.documentElement.classList.toggle('dark', theme === 'dark')
+      return
+    }
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    document.documentElement.classList.toggle('dark', mq.matches)
+    const handler = (e: MediaQueryListEvent) => document.documentElement.classList.toggle('dark', e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [theme])
   return null
 }
 

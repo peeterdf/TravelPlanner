@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload, Moon, Sun, Eye, EyeOff, Cloud, CloudUpload, UserPlus, Copy, Check } from 'lucide-react'
+import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload, Sun, Moon, Monitor, Eye, EyeOff, Cloud, CloudUpload, UserPlus, Copy, Check } from 'lucide-react'
 import { useTripsStore } from '../store/tripsStore'
 import { useSettingsStore, useMask } from '../store/settingsStore'
 import { Modal } from '../components/ui/Modal'
@@ -17,7 +17,7 @@ const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl 
 
 export function Home() {
   const { trips, loaded, load, addTrip, deleteTrip, importTrip, syncToCloud, joinTrip } = useTripsStore()
-  const { darkMode, privacyMode, toggleDark, togglePrivacy } = useSettingsStore()
+  const { theme, privacyMode, cycleTheme, togglePrivacy } = useSettingsStore()
   const mask = useMask()
   const navigate = useNavigate()
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -127,11 +127,12 @@ export function Home() {
           </div>
           <div className="flex gap-1 -mr-1 mt-1">
             <button
-              onClick={toggleDark}
+              onClick={cycleTheme}
               className="p-2 text-blue-200 hover:text-white transition-colors"
-              aria-label={darkMode ? 'Modo claro' : 'Modo oscuro'}
+              aria-label={`Tema: ${theme}`}
+              title={theme === 'light' ? 'Claro' : theme === 'dark' ? 'Oscuro' : 'Sistema'}
             >
-              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+              {theme === 'light' ? <Sun size={18} /> : theme === 'dark' ? <Moon size={18} /> : <Monitor size={18} />}
             </button>
             <button
               onClick={togglePrivacy}
