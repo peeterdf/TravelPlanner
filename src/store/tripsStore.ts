@@ -5,6 +5,7 @@ import type {
 } from '../types'
 import { loadTrips, saveTrips } from '../utils/storage'
 import { DEFAULT_PACKING_CATEGORIES } from '../utils/validate'
+import { uploadTrip as cloudUpload, fetchTrip, subscribeTrip } from '../lib/cloudSync'
 
 function genId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -57,10 +58,31 @@ interface TripsState {
   togglePackingItem: (tripId: string, categoryId: string, itemId: string) => void
   addPackingItem: (tripId: string, categoryId: string, name: string) => void
   deletePackingItem: (tripId: string, categoryId: string, itemId: string) => void
+
+  // Cloud sync
+  syncToCloud: (tripId: string) => Promise<void>
+  joinTrip: (code: string) => Promise<boolean>
 }
+
+const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>()
+const unsubscribers = new Map<string, () => void>()
 
 function persist(trips: Trip[]) {
   saveTrips(trips).catch(console.error)
+  for (const t of trips) {
+    if (!t.synced) continue
+    clearTimeout(debounceTimers.get(t.id))
+    debounceTimers.set(t.id, setTimeout(() => cloudUpload(t).catch(console.error), 800))
+  }
+}
+
+function attachListener(tripId: string, get: () => TripsState, set: (s: Partial<TripsState>) => void) {
+  unsubscribers.get(tripId)?.()
+  const unsub = subscribeTrip(tripId, (remote) => {
+    set({ trips: get().trips.map(t => t.id === tripId ? remote : t) })
+    saveTrips(get().trips).catch(console.error)
+  })
+  unsubscribers.set(tripId, unsub)
 }
 
 export const useTripsStore = create<TripsState>((set, get) => ({
@@ -71,6 +93,9 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     if (get().loaded) return
     const trips = await loadTrips()
     set({ trips, loaded: true })
+    for (const trip of trips) {
+      if (trip.synced) attachListener(trip.id, get, set)
+    }
   },
 
   addTrip: (name, startDate, endDate, travelers) => {
@@ -324,5 +349,29 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     })
     persist(trips)
     set({ trips })
+  },
+
+  syncToCloud: async (tripId) => {
+    const trip = get().trips.find(t => t.id === tripId)
+    if (!trip) return
+    const synced = { ...trip, synced: true }
+    await cloudUpload(synced)
+    const trips = get().trips.map(t => t.id === tripId ? synced : t)
+    saveTrips(trips).catch(console.error)
+    set({ trips })
+    attachListener(tripId, get, set)
+  },
+
+  joinTrip: async (code) => {
+    const remote = await fetchTrip(code)
+    if (!remote) return false
+    const base = { ...remote, synced: true }
+    const trips = get().trips.some(t => t.id === base.id)
+      ? get().trips.map(t => t.id === base.id ? base : t)
+      : [...get().trips, base]
+    saveTrips(trips).catch(console.error)
+    set({ trips })
+    attachListener(base.id, get, set)
+    return true
   },
 }))

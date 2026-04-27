@@ -92,6 +92,7 @@ export interface Trip {
   expenseSplits: ExpenseSplit[]
   packingList: PackingCategory[]
   notes: string
+  synced?: boolean
 }
 
 export interface ItineraryConflict {
