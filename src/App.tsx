@@ -53,7 +53,7 @@ const SECTION_TITLES: Record<string, string> = {
   mas: 'Más',
 }
 
-const BOTTOM_NAV_SECTIONS = new Set(['dashboard', 'transportes', 'itinerario', 'gastos', 'mas'])
+const BOTTOM_NAV_SECTIONS = new Set(['transportes', 'itinerario', 'alojamiento', 'gastos', 'mas'])
 
 function TripLayout() {
   const location = useLocation()
@@ -67,10 +67,12 @@ function TripLayout() {
 
   const title = SECTION_TITLES[section] ?? ''
 
-  const SUB_SECTIONS = new Set(['actividades', 'checklist', 'splits', 'notas', 'auditoria', 'alojamiento'])
-  const backTo = SUB_SECTIONS.has(section)
-    ? `/viaje/${tripId}/mas`
-    : '/'
+  const SUB_SECTIONS = new Set(['actividades', 'checklist', 'splits', 'notas', 'auditoria'])
+  const backTo = section === 'dashboard'
+    ? '/'
+    : SUB_SECTIONS.has(section)
+      ? `/viaje/${tripId}/mas`
+      : `/viaje/${tripId}/dashboard`
 
   return (
     <div className="flex flex-col min-h-screen">

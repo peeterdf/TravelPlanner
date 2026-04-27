@@ -1,11 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Star, CheckSquare, Users, FileText, ClipboardList, Building2, ArrowRight } from 'lucide-react'
+import { Star, CheckSquare, Users, FileText, ClipboardList, ArrowRight } from 'lucide-react'
 
 export function More() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
   const items = [
-    { icon: Building2, label: 'Alojamiento', desc: 'Hoteles, Airbnbs y reservas', to: 'alojamiento', color: 'text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400' },
     { icon: Star, label: 'Actividades', desc: 'Lugares y planes por día', to: 'actividades', color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/30 dark:text-pink-400' },
     { icon: CheckSquare, label: 'Checklist equipaje', desc: 'Listas de packing por categoría', to: 'checklist', color: 'text-teal-600 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-400' },
     { icon: Users, label: 'División de gastos', desc: 'Quién pagó qué y deudas', to: 'splits', color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-400' },
