@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTripsStore } from '../../store/tripsStore'
 import { useSettingsStore, useMask } from '../../store/settingsStore'
 import { validateItinerary } from '../../utils/validate'
-import { differenceInDays } from 'date-fns'
+import { differenceInDays, differenceInCalendarDays } from 'date-fns'
 import { Plane, Calendar, Building2, Wallet, CheckSquare, AlertTriangle, CheckCircle, Users, Activity, ArrowRight } from 'lucide-react'
 
 function formatDate(d: string) {
@@ -27,6 +27,12 @@ export function TripDashboard() {
   const totalDays = trip.startDate && trip.endDate
     ? differenceInDays(new Date(trip.endDate), new Date(trip.startDate)) + 1
     : null
+
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const tripStart = trip.startDate ? new Date(trip.startDate + 'T00:00:00') : null
+  const tripEnd = trip.endDate ? new Date(trip.endDate + 'T00:00:00') : null
+  const daysUntilStart = tripStart ? differenceInCalendarDays(tripStart, today) : null
+  const daysUntilEnd = tripEnd ? differenceInCalendarDays(tripEnd, today) : null
 
   const totalExpenses = trip.expenses.reduce((s, e) => s + e.price, 0)
   const totalPaid = trip.expenses.reduce((s, e) => s + e.paid, 0)
@@ -59,6 +65,26 @@ export function TripDashboard() {
           <div className="flex items-center gap-1.5 mt-2 text-blue-200 text-sm">
             <Users size={14} />
             <span>{trip.travelers.map(t => mask.name(t.name)).join(' · ')}</span>
+          </div>
+        )}
+
+        {daysUntilStart !== null && daysUntilStart > 0 && (
+          <div className="mt-3 flex items-baseline gap-2 bg-white/15 rounded-xl px-3 py-2 w-fit">
+            <span className="text-3xl font-extrabold leading-none">{daysUntilStart}</span>
+            <span className="text-blue-100 text-sm">días para el viaje</span>
+          </div>
+        )}
+        {daysUntilStart === 0 && (
+          <div className="mt-3 bg-white/15 rounded-xl px-3 py-2 w-fit text-sm font-semibold">
+            ¡Hoy empieza el viaje!
+          </div>
+        )}
+        {daysUntilStart !== null && daysUntilStart < 0 && daysUntilEnd !== null && daysUntilEnd >= 0 && (
+          <div className="mt-3 flex items-baseline gap-2 bg-white/15 rounded-xl px-3 py-2 w-fit">
+            <span className="text-sm font-semibold text-blue-100">En curso</span>
+            {totalDays && (
+              <span className="text-xs text-blue-200">día {Math.abs(daysUntilStart) + 1} de {totalDays}</span>
+            )}
           </div>
         )}
       </div>
