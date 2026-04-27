@@ -1,3 +1,4 @@
+import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTripsStore } from '../../store/tripsStore'
 import { useSettingsStore, useMask } from '../../store/settingsStore'
@@ -28,11 +29,47 @@ export function TripDashboard() {
     ? differenceInDays(new Date(trip.endDate), new Date(trip.startDate)) + 1
     : null
 
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const tripStart = trip.startDate ? new Date(trip.startDate + 'T00:00:00') : null
-  const tripEnd = trip.endDate ? new Date(trip.endDate + 'T00:00:00') : null
-  const daysUntilStart = tripStart ? differenceInCalendarDays(tripStart, today) : null
-  const daysUntilEnd = tripEnd ? differenceInCalendarDays(tripEnd, today) : null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const daysUntilStart = trip.startDate
+    ? differenceInCalendarDays(new Date(trip.startDate + 'T00:00:00'), today)
+    : null
+  const daysUntilEnd = trip.endDate
+    ? differenceInCalendarDays(new Date(trip.endDate + 'T00:00:00'), today)
+    : null
+
+  let countdownBadge: React.ReactNode = null
+  if (daysUntilStart !== null) {
+    if (daysUntilStart > 0) {
+      countdownBadge = (
+        <div className="mt-3 inline-flex items-baseline gap-2 bg-white/20 rounded-xl px-3 py-2">
+          <span className="text-3xl font-extrabold leading-none">{daysUntilStart}</span>
+          <span className="text-blue-100 text-sm">días para el viaje</span>
+        </div>
+      )
+    } else if (daysUntilStart === 0) {
+      countdownBadge = (
+        <div className="mt-3 inline-block bg-white/20 rounded-xl px-3 py-2 text-sm font-semibold">
+          ¡Hoy empieza el viaje!
+        </div>
+      )
+    } else if (daysUntilEnd !== null && daysUntilEnd >= 0) {
+      countdownBadge = (
+        <div className="mt-3 inline-flex items-baseline gap-2 bg-white/20 rounded-xl px-3 py-2">
+          <span className="text-sm font-semibold">En curso</span>
+          {totalDays && (
+            <span className="text-xs text-blue-200">día {Math.abs(daysUntilStart) + 1} de {totalDays}</span>
+          )}
+        </div>
+      )
+    } else {
+      countdownBadge = (
+        <div className="mt-3 inline-block bg-white/20 rounded-xl px-3 py-2 text-sm text-blue-200">
+          Viaje finalizado
+        </div>
+      )
+    }
+  }
 
   const totalExpenses = trip.expenses.reduce((s, e) => s + e.price, 0)
   const totalPaid = trip.expenses.reduce((s, e) => s + e.paid, 0)
@@ -68,32 +105,7 @@ export function TripDashboard() {
           </div>
         )}
 
-        {daysUntilStart !== null && (() => {
-          if (daysUntilStart > 0) return (
-            <div className="mt-3 flex items-baseline gap-2 bg-white/15 rounded-xl px-3 py-2 w-fit">
-              <span className="text-3xl font-extrabold leading-none">{daysUntilStart}</span>
-              <span className="text-blue-100 text-sm">días para el viaje</span>
-            </div>
-          )
-          if (daysUntilStart === 0) return (
-            <div className="mt-3 bg-white/15 rounded-xl px-3 py-2 w-fit text-sm font-semibold">
-              ¡Hoy empieza el viaje!
-            </div>
-          )
-          if (daysUntilEnd !== null && daysUntilEnd >= 0) return (
-            <div className="mt-3 flex items-baseline gap-2 bg-white/15 rounded-xl px-3 py-2 w-fit">
-              <span className="text-sm font-semibold text-blue-100">En curso</span>
-              {totalDays && (
-                <span className="text-xs text-blue-200">día {Math.abs(daysUntilStart) + 1} de {totalDays}</span>
-              )}
-            </div>
-          )
-          return (
-            <div className="mt-3 bg-white/15 rounded-xl px-3 py-2 w-fit text-sm text-blue-200">
-              Viaje finalizado
-            </div>
-          )
-        })()}
+        {countdownBadge}
       </div>
 
       {/* Validation indicator */}
