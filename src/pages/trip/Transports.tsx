@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Plane, ExternalLink } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Plus, Trash2, Pencil, Plane, ExternalLink, CircleDollarSign } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -22,6 +22,7 @@ const labelCls = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-
 
 export function Transports() {
   const { tripId } = useParams<{ tripId: string }>()
+  const navigate = useNavigate()
   const { trips, addTransport, updateTransport, deleteTransport } = useTripsStore()
   const trip = trips.find(t => t.id === tripId)
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
@@ -84,6 +85,18 @@ export function Transports() {
                     <ExternalLink size={16} />
                   </a>
                 )}
+                <button
+                  onClick={() => navigate(`/viaje/${tripId}/gastos`, { state: { prefill: {
+                    concept: `${t.origin} → ${t.destination}`,
+                    date: t.departureDate,
+                    detail: t.company || '',
+                    currency: 'USD',
+                  }}})}
+                  className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
+                  title="Agregar a gastos"
+                >
+                  <CircleDollarSign size={16} />
+                </button>
                 <button onClick={() => openEdit(t)} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                   <Pencil size={16} />
                 </button>

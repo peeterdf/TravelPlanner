@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Building2, Phone, MapPin, Key, Hash, ExternalLink } from 'lucide-react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { Plus, Trash2, Pencil, Building2, Phone, MapPin, Key, Hash, ExternalLink, CircleDollarSign } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -15,6 +15,7 @@ const labelCls = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-
 
 export function Accommodations() {
   const { tripId } = useParams<{ tripId: string }>()
+  const navigate = useNavigate()
   const { trips, addAccommodation, updateAccommodation, deleteAccommodation } = useTripsStore()
   const trip = trips.find(t => t.id === tripId)
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
@@ -98,6 +99,17 @@ export function Accommodations() {
                     <ExternalLink size={16} />
                   </a>
                 )}
+                <button
+                  onClick={() => navigate(`/viaje/${tripId}/gastos`, { state: { prefill: {
+                    concept: `Alojamiento ${a.city}`,
+                    detail: a.confirmationCode || '',
+                    currency: 'USD',
+                  }}})}
+                  className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
+                  title="Agregar a gastos"
+                >
+                  <CircleDollarSign size={16} />
+                </button>
                 <button onClick={() => openEdit(a)} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                   <Pencil size={16} />
                 </button>

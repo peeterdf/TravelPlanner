@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Wallet, CheckCircle2, Users } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useParams, useLocation } from 'react-router-dom'
+import { Plus, Trash2, Pencil, Wallet, CheckCircle2, Users, ArrowRight } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
 import { useMask } from '../../store/settingsStore'
 import { Modal } from '../../components/ui/Modal'
@@ -17,8 +17,24 @@ const EMPTY: Omit<Expense, 'id'> = {
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
 const labelCls = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1'
 
+function calcSettlements(net: Record<string, number>) {
+  const pos = Object.entries(net).filter(([, v]) => v > 0.5).map(([n, v]) => [n, v] as [string, number])
+  const neg = Object.entries(net).filter(([, v]) => v < -0.5).map(([n, v]) => [n, -v] as [string, number])
+  const result: { from: string; to: string; amount: number }[] = []
+  let i = 0, j = 0
+  while (i < pos.length && j < neg.length) {
+    const amt = Math.min(pos[i][1], neg[j][1])
+    result.push({ from: neg[j][0], to: pos[i][0], amount: amt })
+    pos[i][1] -= amt; neg[j][1] -= amt
+    if (pos[i][1] < 0.5) i++
+    if (neg[j][1] < 0.5) j++
+  }
+  return result
+}
+
 export function Expenses() {
   const { tripId } = useParams<{ tripId: string }>()
+  const location = useLocation()
   const { trips, addExpense, updateExpense, deleteExpense } = useTripsStore()
   const mask = useMask()
   const trip = trips.find(t => t.id === tripId)
@@ -27,15 +43,25 @@ export function Expenses() {
   const [form, setForm] = useState<Omit<Expense, 'id'>>(EMPTY)
   const [editId, setEditId] = useState<string | null>(null)
 
+  const travelerNames = trip?.travelers.map(t => t.name) ?? []
+
+  useEffect(() => {
+    const prefill = (location.state as { prefill?: Partial<Omit<Expense, 'id'>> } | null)?.prefill
+    if (prefill) {
+      setForm({ ...EMPTY, ...prefill, includedTravelers: [...travelerNames] })
+      setModal('add')
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!trip) return null
 
-  const travelerNames = trip.travelers.map(t => t.name)
   const sorted = [...trip.expenses].sort((a, b) => a.date.localeCompare(b.date))
   const totalPrice = sorted.reduce((s, e) => s + e.price, 0)
   const totalPaid = sorted.reduce((s, e) => s + e.paid, 0)
   const remaining = totalPrice - totalPaid
 
   const splitExpenses = sorted.filter(e => e.paidBy)
+  const currency = splitExpenses[0]?.currency ?? sorted[0]?.currency ?? 'USD'
 
   const netBalance: Record<string, number> = {}
   for (const e of splitExpenses) {
@@ -44,6 +70,8 @@ export function Expenses() {
     netBalance[e.paidBy!] = (netBalance[e.paidBy!] ?? 0) + e.price
     for (const p of included) netBalance[p] = (netBalance[p] ?? 0) - share
   }
+
+  const settlements = calcSettlements(netBalance)
 
   const openAdd = () => {
     setForm({ ...EMPTY, includedTravelers: [...travelerNames] })
@@ -166,7 +194,7 @@ export function Expenses() {
             />
           ) : (
             <>
-              {/* Balance summary */}
+              {/* Balance per person */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Balance por persona</p>
                 <div className="space-y-2">
@@ -181,34 +209,22 @@ export function Expenses() {
                 </div>
               </div>
 
-              {/* List of expenses feeding the balance */}
-              <div className="space-y-2">
-                {splitExpenses.map(e => {
-                  const included = e.includedTravelers?.length ? e.includedTravelers : travelerNames
-                  return (
-                    <div key={e.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-4 py-3 flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{e.concept}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                          Pagó <span className="font-semibold text-gray-700 dark:text-gray-300">{mask.name(e.paidBy!)}</span>
-                          {' · '}{e.currency} {mask.amount2(e.price)}
-                        </p>
-                        {included.length < travelerNames.length ? (
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                            Incluye: {included.map(n => mask.name(n)).join(', ')}
-                          </p>
-                        ) : (
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Todos los viajeros</p>
-                        )}
+              {/* Settlements */}
+              {settlements.length > 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Cómo saldar</p>
+                  <div className="space-y-2.5">
+                    {settlements.map((s, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm">
+                        <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.from)}</span>
+                        <ArrowRight size={14} className="text-gray-400 shrink-0" />
+                        <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.to)}</span>
+                        <span className="ml-auto text-gray-700 dark:text-gray-300 font-semibold">{currency} {mask.amount2(s.amount)}</span>
                       </div>
-                      <div className="flex gap-1 shrink-0">
-                        <button onClick={() => openEdit(e)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><Pencil size={15} /></button>
-                        <button onClick={() => deleteExpense(tripId!, e.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
