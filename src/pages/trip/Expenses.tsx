@@ -63,7 +63,7 @@ export function Expenses() {
   const remaining = totalPrice - totalPaid
 
   const splitExpenses = sorted.filter(e => e.paidBy)
-  const currency = splitExpenses[0]?.currency ?? sorted[0]?.currency ?? 'USD'
+  const currency = trip.currency ?? 'USD'
 
   const netBalance: Record<string, number> = {}
   for (const e of splitExpenses) {

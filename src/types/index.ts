@@ -23,6 +23,7 @@ export interface Transport {
 export interface Accommodation {
   id: string
   city: string
+  checkInDate: string
   nights: number
   confirmationCode: string
   pin: string

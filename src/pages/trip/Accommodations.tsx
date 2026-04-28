@@ -4,10 +4,13 @@ import { Plus, Trash2, Pencil, Building2, Phone, MapPin, Key, Hash, ExternalLink
 import { useTripsStore } from '../../store/tripsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { DateInput } from '../../components/ui/DateInput'
 import type { Accommodation } from '../../types'
 
+const fmtDate = (d: string) => d ? d.split('-').reverse().join('/') : ''
+
 const EMPTY: Omit<Accommodation, 'id'> = {
-  city: '', nights: 1, confirmationCode: '', pin: '', phone: '', address: '', notes: '', url: '',
+  city: '', checkInDate: '', nights: 1, confirmationCode: '', pin: '', phone: '', address: '', notes: '', url: '',
 }
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
@@ -55,7 +58,7 @@ export function Accommodations() {
                 <div className="flex items-center gap-2">
                   <h3 className="font-semibold text-gray-900 dark:text-white">{a.city}</h3>
                   <span className="text-xs bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
-                    {a.nights} noche{a.nights !== 1 ? 's' : ''}
+                    {a.checkInDate ? `${fmtDate(a.checkInDate)} · ` : ''}{a.nights} noche{a.nights !== 1 ? 's' : ''}
                   </span>
                 </div>
                 <div className="mt-2 space-y-1.5">
@@ -140,9 +143,22 @@ export function Accommodations() {
               </div>
               <div>
                 <label className={labelCls}>Noches</label>
-                <input type="number" min="1" className={inputCls}
-                  value={form.nights} onChange={e => f('nights', parseInt(e.target.value) || 1)} />
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  className={inputCls}
+                  placeholder="3"
+                  value={form.nights === 0 ? '' : String(form.nights)}
+                  onChange={e => {
+                    const v = e.target.value.replace(/\D/g, '')
+                    f('nights', v === '' ? 1 : Math.max(1, parseInt(v)))
+                  }}
+                />
               </div>
+            </div>
+            <div>
+              <label className={labelCls}>Check-in</label>
+              <DateInput className={inputCls} value={form.checkInDate} onChange={v => f('checkInDate', v)} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
