@@ -6,6 +6,11 @@ import { validateItinerary } from '../../utils/validate'
 import { differenceInDays, differenceInCalendarDays } from 'date-fns'
 import { Plane, Calendar, Building2, Wallet, CheckSquare, AlertTriangle, CheckCircle, Users, Activity, Pencil, UserMinus, UserPlus, X } from 'lucide-react'
 import { Modal } from '../../components/ui/Modal'
+import { DateInput } from '../../components/ui/DateInput'
+
+const CURRENCIES = ['USD', 'EUR', 'ARS', 'GBP', 'BRL', 'CLP', 'MXN', 'COP']
+const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
+const labelCls = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1'
 
 function formatDate(d: string) {
   const [, m, day] = d.split('-')
@@ -27,7 +32,7 @@ function calcNetBalance(trip: { expenses: { paidBy?: string; price: number; incl
 export function TripDashboard() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
-  const { addTraveler, removeTraveler } = useTripsStore()
+  const { addTraveler, removeTraveler, updateTrip } = useTripsStore()
   const trip = useTripsStore(s => s.trips.find(t => t.id === tripId))
   const { privacyMode } = useSettingsStore()
   const mask = useMask()
@@ -35,6 +40,12 @@ export function TripDashboard() {
   const [showTravelers, setShowTravelers] = useState(false)
   const [newName, setNewName] = useState('')
   const [removeError, setRemoveError] = useState<Record<string, string>>({})
+
+  const [showEdit, setShowEdit] = useState(false)
+  const [editName, setEditName] = useState('')
+  const [editStart, setEditStart] = useState('')
+  const [editEnd, setEditEnd] = useState('')
+  const [editCurrency, setEditCurrency] = useState('')
 
   if (!trip) return (
     <div className="p-6 text-center text-gray-500 dark:text-gray-400">
@@ -134,7 +145,22 @@ export function TripDashboard() {
     <div className="p-4 space-y-4 pb-8">
       {/* Trip header */}
       <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-4 text-white">
-        <h2 className="text-xl font-bold">{trip.name}</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-bold">{trip.name}</h2>
+          <button
+            onClick={() => {
+              setEditName(trip.name)
+              setEditStart(trip.startDate)
+              setEditEnd(trip.endDate)
+              setEditCurrency(trip.currency ?? 'USD')
+              setShowEdit(true)
+            }}
+            className="p-1 text-blue-300 hover:text-white transition-colors"
+            title="Editar viaje"
+          >
+            <Pencil size={14} />
+          </button>
+        </div>
         {trip.startDate && trip.endDate && (
           <p className="text-blue-200 text-sm mt-1">
             {formatDate(trip.startDate)} → {formatDate(trip.endDate)}
@@ -283,6 +309,50 @@ export function TripDashboard() {
                 </button>
               </div>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Editar viaje */}
+      {showEdit && (
+        <Modal title="Editar viaje" onClose={() => setShowEdit(false)}>
+          <div className="space-y-4">
+            <div>
+              <label className={labelCls}>Nombre del viaje</label>
+              <input className={inputCls} value={editName} onChange={e => setEditName(e.target.value)} autoFocus />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={labelCls}>Fecha de salida</label>
+                <DateInput className={inputCls} value={editStart} onChange={setEditStart} />
+              </div>
+              <div>
+                <label className={labelCls}>Fecha de vuelta</label>
+                <DateInput className={inputCls} value={editEnd} onChange={setEditEnd} />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Moneda</label>
+              <div className="flex flex-wrap gap-2">
+                {CURRENCIES.map(c => (
+                  <button key={c} type="button" onClick={() => setEditCurrency(c)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${editCurrency === c ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                if (!editName.trim()) return
+                updateTrip(tripId!, { name: editName.trim(), startDate: editStart, endDate: editEnd, currency: editCurrency })
+                setShowEdit(false)
+              }}
+              disabled={!editName.trim()}
+              className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold text-sm hover:bg-blue-700 disabled:opacity-40 transition-colors"
+            >
+              Guardar cambios
+            </button>
           </div>
         </Modal>
       )}

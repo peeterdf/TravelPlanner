@@ -44,7 +44,7 @@ interface TripsState {
   addTrip: (name: string, startDate: string, endDate: string, travelers: string[], currency: string) => string
   importTrip: (trip: Trip) => void
   deleteTrip: (id: string) => void
-  updateTrip: (id: string, partial: Partial<Pick<Trip, 'name' | 'startDate' | 'endDate'>>) => void
+  updateTrip: (id: string, partial: Partial<Pick<Trip, 'name' | 'startDate' | 'endDate' | 'currency'>>) => void
   setNotes: (tripId: string, notes: string) => void
 
   // Travelers
@@ -79,6 +79,9 @@ interface TripsState {
   togglePackingItem: (tripId: string, categoryId: string, itemId: string) => void
   addPackingItem: (tripId: string, categoryId: string, name: string) => void
   deletePackingItem: (tripId: string, categoryId: string, itemId: string) => void
+  addPackingCategory: (tripId: string, name: string) => void
+  deletePackingCategory: (tripId: string, categoryId: string) => void
+  resetPackingChecked: (tripId: string) => void
 
   // Cloud sync
   syncToCloud: (tripId: string) => Promise<void>
@@ -203,9 +206,10 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   },
 
   addTraveler: (tripId, name) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, travelers: [...t.travelers, { id: genId(), name }] }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      return withAudit({ ...t, travelers: [...t.travelers, { id: genId(), name }] }, mkAudit('add', 'viajeros', name))
+    })
     persist(trips)
     set({ trips })
   },
@@ -213,7 +217,11 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   removeTraveler: (tripId, travelerId) => {
     const trips = get().trips.map(t => {
       if (t.id !== tripId) return t
-      return { ...t, travelers: t.travelers.filter(v => v.id !== travelerId) }
+      const traveler = t.travelers.find(v => v.id === travelerId)
+      return withAudit(
+        { ...t, travelers: t.travelers.filter(v => v.id !== travelerId) },
+        mkAudit('delete', 'viajeros', traveler?.name ?? travelerId)
+      )
     })
     persist(trips)
     set({ trips })
@@ -414,6 +422,39 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       return withAudit(updated, mkAudit('delete', 'checklist', item?.name ?? itemId))
     })
     persist(trips)
+    set({ trips })
+  },
+
+  addPackingCategory: (tripId, name) => {
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      return { ...t, packingList: [...t.packingList, { id: genId(), name, items: [] }] }
+    })
+    persist(trips)
+    set({ trips })
+  },
+
+  deletePackingCategory: (tripId, categoryId) => {
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      return { ...t, packingList: t.packingList.filter(c => c.id !== categoryId) }
+    })
+    persist(trips)
+    set({ trips })
+  },
+
+  resetPackingChecked: (tripId) => {
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      return {
+        ...t,
+        packingList: t.packingList.map(cat => ({
+          ...cat,
+          items: cat.items.map(i => ({ ...i, checked: false })),
+        })),
+      }
+    })
+    persistLocal(trips)
     set({ trips })
   },
 

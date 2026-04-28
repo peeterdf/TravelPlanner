@@ -14,6 +14,8 @@ const EMPTY: Omit<Activity, 'id'> = { date: '', city: '', place: '', type: '', n
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
 const labelCls = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1'
 
+const fmtDate = (d: string) => d ? d.split('-').reverse().join('/') : ''
+
 export function Activities() {
   const { tripId } = useParams<{ tripId: string }>()
   const { trips, addActivity, updateActivity, deleteActivity } = useTripsStore()
@@ -21,7 +23,6 @@ export function Activities() {
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
   const [form, setForm] = useState<Omit<Activity, 'id'>>(EMPTY)
   const [editId, setEditId] = useState<string | null>(null)
-
   if (!trip) return null
 
   const sorted = [...trip.activities].sort((a, b) => a.date.localeCompare(b.date))
@@ -32,6 +33,10 @@ export function Activities() {
     acc[key].push(a)
     return acc
   }, {})
+
+  const dateOutOfRange = form.date && trip.startDate && trip.endDate
+    ? form.date < trip.startDate || form.date > trip.endDate
+    : false
 
   const openAdd = () => { setForm(EMPTY); setModal('add') }
   const openEdit = (a: Activity) => { setForm({ ...a }); setEditId(a.id); setModal('edit') }
@@ -108,6 +113,11 @@ export function Activities() {
               <div>
                 <label className={labelCls}>Fecha</label>
                 <DateInput className={inputCls} value={form.date} onChange={v => f('date', v)} />
+                {dateOutOfRange && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                    Fuera del rango del viaje ({fmtDate(trip.startDate)} – {fmtDate(trip.endDate)})
+                  </p>
+                )}
               </div>
               <div>
                 <label className={labelCls}>Ciudad</label>

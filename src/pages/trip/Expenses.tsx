@@ -285,8 +285,12 @@ export function Expenses() {
             </label>
 
             {/* División section */}
-            {travelerNames.length > 0 && (
-              <div className="border-t border-gray-100 dark:border-gray-700 pt-3 space-y-3">
+            {travelerNames.length === 0 ? (
+              <p className="text-xs text-gray-400 dark:text-gray-500 italic border-t border-gray-100 dark:border-gray-700 pt-3">
+                Agregá viajeros al viaje para registrar quién pagó y dividir el gasto.
+              </p>
+            ) : (
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-3 space-y-3">
                 <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">División entre viajeros (opcional)</p>
                 <div>
                   <label className={labelCls}>Pagado por</label>

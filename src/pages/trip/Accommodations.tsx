@@ -105,6 +105,7 @@ export function Accommodations() {
                 <button
                   onClick={() => navigate(`/viaje/${tripId}/gastos`, { state: { prefill: {
                     concept: `Alojamiento ${a.city}`,
+                    date: a.checkInDate || '',
                     detail: a.confirmationCode || '',
                   }}})}
                   className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
