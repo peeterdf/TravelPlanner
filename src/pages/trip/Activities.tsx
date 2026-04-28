@@ -76,7 +76,7 @@ export function Activities() {
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <button onClick={() => openEdit(a)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><Pencil size={15} /></button>
-                      <button onClick={() => deleteActivity(tripId!, a.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
+                      <button onClick={() => { if (confirm(`¿Eliminar "${a.place}"?`)) deleteActivity(tripId!, a.id) }} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
                     </div>
                   </div>
                 ))}

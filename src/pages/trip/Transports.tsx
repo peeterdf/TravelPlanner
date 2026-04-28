@@ -90,7 +90,6 @@ export function Transports() {
                     concept: `${t.origin} → ${t.destination}`,
                     date: t.departureDate,
                     detail: t.company || '',
-                    currency: 'USD',
                   }}})}
                   className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
                   title="Agregar a gastos"
@@ -100,7 +99,7 @@ export function Transports() {
                 <button onClick={() => openEdit(t)} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                   <Pencil size={16} />
                 </button>
-                <button onClick={() => deleteTransport(tripId!, t.id)} className="p-2 text-gray-400 hover:text-red-500">
+                <button onClick={() => { if (confirm(`¿Eliminar "${t.origin} → ${t.destination}"?`)) deleteTransport(tripId!, t.id) }} className="p-2 text-gray-400 hover:text-red-500">
                   <Trash2 size={16} />
                 </button>
               </div>

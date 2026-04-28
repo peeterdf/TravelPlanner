@@ -27,6 +27,7 @@ export function Home() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [travelersRaw, setTravelersRaw] = useState('')
+  const [currency, setCurrency] = useState('USD')
 
   const [syncingId, setSyncingId] = useState<string | null>(null)
   const [syncCode, setSyncCode] = useState<string | null>(null)
@@ -42,9 +43,9 @@ export function Home() {
   const handleCreate = () => {
     if (!name.trim()) return
     const travelers = travelersRaw.split(',').map(s => s.trim()).filter(Boolean)
-    const id = addTrip(name.trim(), startDate, endDate, travelers)
+    const id = addTrip(name.trim(), startDate, endDate, travelers, currency)
     setShowNew(false)
-    setName(''); setStartDate(''); setEndDate(''); setTravelersRaw('')
+    setName(''); setStartDate(''); setEndDate(''); setTravelersRaw(''); setCurrency('USD')
     navigate(`/viaje/${id}/dashboard`)
   }
 
@@ -288,6 +289,17 @@ export function Home() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Viajeros (separados por coma)</label>
               <input className={inputCls} placeholder="Ej: Ana, Bruno, Clara" value={travelersRaw} onChange={e => setTravelersRaw(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Moneda principal</label>
+              <div className="flex flex-wrap gap-2">
+                {['USD', 'EUR', 'ARS', 'GBP', 'BRL', 'CLP', 'MXN', 'COP'].map(c => (
+                  <button key={c} type="button" onClick={() => setCurrency(c)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition-colors ${currency === c ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                    {c}
+                  </button>
+                ))}
+              </div>
             </div>
             <button
               onClick={handleCreate}

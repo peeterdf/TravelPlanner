@@ -41,7 +41,7 @@ interface TripsState {
   trips: Trip[]
   loaded: boolean
   load: () => Promise<void>
-  addTrip: (name: string, startDate: string, endDate: string, travelers: string[]) => string
+  addTrip: (name: string, startDate: string, endDate: string, travelers: string[], currency: string) => string
   importTrip: (trip: Trip) => void
   deleteTrip: (id: string) => void
   updateTrip: (id: string, partial: Partial<Pick<Trip, 'name' | 'startDate' | 'endDate'>>) => void
@@ -149,13 +149,14 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     }
   },
 
-  addTrip: (name, startDate, endDate, travelers) => {
+  addTrip: (name, startDate, endDate, travelers, currency) => {
     const id = genId()
     const trip: Trip = {
       id,
       name,
       startDate,
       endDate,
+      currency,
       travelers: travelers.map(n => ({ id: genId(), name: n })),
       transports: [],
       accommodations: [],
@@ -210,9 +211,18 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   },
 
   removeTraveler: (tripId, travelerId) => {
-    const trips = get().trips.map(t => t.id === tripId
-      ? { ...t, travelers: t.travelers.filter(v => v.id !== travelerId) }
-      : t)
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      const name = t.travelers.find(v => v.id === travelerId)?.name
+      const expenses = name
+        ? t.expenses.map(e => ({
+            ...e,
+            paidBy: e.paidBy === name ? undefined : e.paidBy,
+            includedTravelers: e.includedTravelers?.filter(n => n !== name),
+          }))
+        : t.expenses
+      return { ...t, travelers: t.travelers.filter(v => v.id !== travelerId), expenses }
+    })
     persist(trips)
     set({ trips })
   },

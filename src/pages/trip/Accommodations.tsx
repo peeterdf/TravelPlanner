@@ -103,7 +103,6 @@ export function Accommodations() {
                   onClick={() => navigate(`/viaje/${tripId}/gastos`, { state: { prefill: {
                     concept: `Alojamiento ${a.city}`,
                     detail: a.confirmationCode || '',
-                    currency: 'USD',
                   }}})}
                   className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
                   title="Agregar a gastos"
@@ -113,7 +112,7 @@ export function Accommodations() {
                 <button onClick={() => openEdit(a)} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                   <Pencil size={16} />
                 </button>
-                <button onClick={() => deleteAccommodation(tripId!, a.id)} className="p-2 text-gray-400 hover:text-red-500">
+                <button onClick={() => { if (confirm(`¿Eliminar alojamiento en ${a.city}?`)) deleteAccommodation(tripId!, a.id) }} className="p-2 text-gray-400 hover:text-red-500">
                   <Trash2 size={16} />
                 </button>
               </div>

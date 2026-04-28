@@ -11,6 +11,7 @@ export function buildDemoTrip(): Trip {
     name: 'Europa 2024',
     startDate: '2024-05-20',
     endDate: '2024-06-24',
+    currency: 'USD',
     travelers: [
       { id: id('t', 1), name: 'Ana' },
       { id: id('t', 2), name: 'Bruno' },

@@ -96,6 +96,7 @@ export interface Trip {
   name: string
   startDate: string
   endDate: string
+  currency: string
   travelers: Traveler[]
   transports: Transport[]
   accommodations: Accommodation[]

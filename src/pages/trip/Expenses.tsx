@@ -48,7 +48,7 @@ export function Expenses() {
   useEffect(() => {
     const prefill = (location.state as { prefill?: Partial<Omit<Expense, 'id'>> } | null)?.prefill
     if (prefill) {
-      setForm({ ...EMPTY, ...prefill, includedTravelers: [...travelerNames] })
+      setForm({ ...EMPTY, currency: trip?.currency ?? 'USD', ...prefill, includedTravelers: [...travelerNames] })
       setModal('add')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -74,7 +74,7 @@ export function Expenses() {
   const settlements = calcSettlements(netBalance)
 
   const openAdd = () => {
-    setForm({ ...EMPTY, includedTravelers: [...travelerNames] })
+    setForm({ ...EMPTY, currency: trip.currency ?? 'USD', includedTravelers: [...travelerNames] })
     setModal('add')
   }
   const openEdit = (e: Expense) => {
@@ -174,7 +174,7 @@ export function Expenses() {
                   </div>
                   <div className="flex gap-1 shrink-0">
                     <button onClick={() => openEdit(e)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><Pencil size={15} /></button>
-                    <button onClick={() => deleteExpense(tripId!, e.id)} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
+                    <button onClick={() => { if (confirm(`¿Eliminar "${e.concept}"?`)) deleteExpense(tripId!, e.id) }} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={15} /></button>
                   </div>
                 </div>
               </div>
