@@ -213,15 +213,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   removeTraveler: (tripId, travelerId) => {
     const trips = get().trips.map(t => {
       if (t.id !== tripId) return t
-      const name = t.travelers.find(v => v.id === travelerId)?.name
-      const expenses = name
-        ? t.expenses.map(e => ({
-            ...e,
-            paidBy: e.paidBy === name ? undefined : e.paidBy,
-            includedTravelers: e.includedTravelers?.filter(n => n !== name),
-          }))
-        : t.expenses
-      return { ...t, travelers: t.travelers.filter(v => v.id !== travelerId), expenses }
+      return { ...t, travelers: t.travelers.filter(v => v.id !== travelerId) }
     })
     persist(trips)
     set({ trips })

@@ -1,22 +1,40 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTripsStore } from '../../store/tripsStore'
 import { useSettingsStore, useMask } from '../../store/settingsStore'
 import { validateItinerary } from '../../utils/validate'
 import { differenceInDays, differenceInCalendarDays } from 'date-fns'
-import { Plane, Calendar, Building2, Wallet, CheckSquare, AlertTriangle, CheckCircle, Users, Activity } from 'lucide-react'
+import { Plane, Calendar, Building2, Wallet, CheckSquare, AlertTriangle, CheckCircle, Users, Activity, Pencil, UserMinus, UserPlus, X } from 'lucide-react'
+import { Modal } from '../../components/ui/Modal'
 
 function formatDate(d: string) {
   const [, m, day] = d.split('-')
   return `${day}/${m}`
 }
 
+function calcNetBalance(trip: { expenses: { paidBy?: string; price: number; includedTravelers?: string[] }[]; travelers: { name: string }[] }) {
+  const travelerNames = trip.travelers.map(t => t.name)
+  const net: Record<string, number> = {}
+  for (const e of trip.expenses.filter(e => e.paidBy)) {
+    const included = e.includedTravelers?.length ? e.includedTravelers : travelerNames
+    const share = included.length > 0 ? e.price / included.length : 0
+    net[e.paidBy!] = (net[e.paidBy!] ?? 0) + e.price
+    for (const p of included) net[p] = (net[p] ?? 0) - share
+  }
+  return net
+}
+
 export function TripDashboard() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
+  const { addTraveler, removeTraveler } = useTripsStore()
   const trip = useTripsStore(s => s.trips.find(t => t.id === tripId))
   const { privacyMode } = useSettingsStore()
   const mask = useMask()
+
+  const [showTravelers, setShowTravelers] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [removeError, setRemoveError] = useState<Record<string, string>>({})
 
   if (!trip) return (
     <div className="p-6 text-center text-gray-500 dark:text-gray-400">
@@ -87,6 +105,31 @@ export function TripDashboard() {
     { label: 'Checklist', icon: CheckSquare, to: 'checklist', value: `${checkedItems}/${totalItems}`, color: 'text-teal-600 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-400' },
   ]
 
+  const netBalance = calcNetBalance(trip)
+
+  const handleRemove = (travelerId: string, travelerName: string) => {
+    const balance = netBalance[travelerName] ?? 0
+    if (Math.abs(balance) > 0.5) {
+      const sign = balance > 0 ? 'le deben' : 'debe'
+      const amt = `${trip.currency} ${Math.abs(balance).toFixed(2)}`
+      setRemoveError(prev => ({
+        ...prev,
+        [travelerId]: `Saldo pendiente: ${sign} ${amt}. Saldá primero en la pestaña Balance de Gastos.`,
+      }))
+      return
+    }
+    removeTraveler(tripId!, travelerId)
+    setRemoveError(prev => { const n = { ...prev }; delete n[travelerId]; return n })
+  }
+
+  const handleAdd = () => {
+    const name = newName.trim()
+    if (!name) return
+    if (trip.travelers.some(t => t.name.toLowerCase() === name.toLowerCase())) return
+    addTraveler(tripId!, name)
+    setNewName('')
+  }
+
   return (
     <div className="p-4 space-y-4 pb-8">
       {/* Trip header */}
@@ -98,12 +141,18 @@ export function TripDashboard() {
             {totalDays && <span className="ml-2 bg-blue-500 px-2 py-0.5 rounded-full text-xs">{totalDays} días</span>}
           </p>
         )}
-        {trip.travelers.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-2 text-blue-200 text-sm">
-            <Users size={14} />
-            <span>{trip.travelers.map(t => mask.name(t.name)).join(' · ')}</span>
-          </div>
-        )}
+        <button
+          onClick={() => { setShowTravelers(true); setRemoveError({}) }}
+          className="flex items-center gap-1.5 mt-2 text-blue-200 hover:text-white transition-colors text-sm group"
+        >
+          <Users size={14} />
+          <span>
+            {trip.travelers.length === 0
+              ? 'Agregar viajeros'
+              : trip.travelers.map(t => mask.name(t.name)).join(' · ')}
+          </span>
+          <Pencil size={11} className="opacity-60 group-hover:opacity-100" />
+        </button>
 
         {countdownBadge}
       </div>
@@ -169,6 +218,74 @@ export function TripDashboard() {
         ))}
       </div>
 
+      {/* Modal: Viajeros */}
+      {showTravelers && (
+        <Modal title="Viajeros" onClose={() => setShowTravelers(false)}>
+          <div className="space-y-4">
+            {/* Lista actual */}
+            {trip.travelers.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">Sin viajeros aún.</p>
+            ) : (
+              <div className="space-y-2">
+                {trip.travelers.map(t => {
+                  const balance = netBalance[t.name] ?? 0
+                  const hasBalance = Math.abs(balance) > 0.5
+                  return (
+                    <div key={t.id} className="space-y-1">
+                      <div className="flex items-center justify-between gap-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl px-3 py-2.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-medium text-gray-900 dark:text-white text-sm truncate">{mask.name(t.name)}</span>
+                          {hasBalance && (
+                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 ${balance > 0 ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'}`}>
+                              {balance > 0 ? `+${trip.currency} ${Math.abs(balance).toFixed(0)}` : `-${trip.currency} ${Math.abs(balance).toFixed(0)}`}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRemove(t.id, t.name)}
+                          className={`p-1.5 rounded-lg transition-colors shrink-0 ${hasBalance ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'}`}
+                          title={hasBalance ? 'Saldo pendiente — no se puede eliminar' : 'Eliminar viajero'}
+                        >
+                          <UserMinus size={16} />
+                        </button>
+                      </div>
+                      {removeError[t.id] && (
+                        <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs rounded-lg px-3 py-2">
+                          <span className="flex-1">{removeError[t.id]}</span>
+                          <button onClick={() => setRemoveError(prev => { const n = { ...prev }; delete n[t.id]; return n })}>
+                            <X size={12} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Agregar viajero */}
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Agregar viajero</p>
+              <div className="flex gap-2">
+                <input
+                  className="flex-1 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white"
+                  placeholder="Nombre"
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
+                />
+                <button
+                  onClick={handleAdd}
+                  disabled={!newName.trim()}
+                  className="bg-blue-600 text-white rounded-xl px-3 py-2 disabled:opacity-40 hover:bg-blue-700 transition-colors"
+                >
+                  <UserPlus size={18} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
