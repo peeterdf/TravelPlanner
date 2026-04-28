@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Plus, Trash2, Pencil, Plane, ExternalLink, CircleDollarSign } from 'lucide-react'
+import { DateInput } from '../../components/ui/DateInput'
 import { useTripsStore } from '../../store/tripsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -144,7 +145,7 @@ export function Transports() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Fecha salida</label>
-                <input type="date" className={inputCls} value={form.departureDate} onChange={e => f('departureDate', e.target.value)} />
+                <DateInput className={inputCls} value={form.departureDate} onChange={v => f('departureDate', v)} />
               </div>
               <div>
                 <label className={labelCls}>Hora salida</label>
@@ -154,7 +155,7 @@ export function Transports() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Fecha llegada</label>
-                <input type="date" className={inputCls} value={form.arrivalDate} onChange={e => f('arrivalDate', e.target.value)} />
+                <DateInput className={inputCls} value={form.arrivalDate} onChange={v => f('arrivalDate', v)} />
               </div>
               <div>
                 <label className={labelCls}>Hora llegada</label>

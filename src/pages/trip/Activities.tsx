@@ -4,6 +4,7 @@ import { Plus, Trash2, Pencil, Star } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { DateInput } from '../../components/ui/DateInput'
 import type { Activity } from '../../types'
 
 const ACTIVITY_TYPES = ['Museo', 'Restaurante', 'Excursión', 'Monumento', 'Show/Evento', 'Compras', 'Naturaleza', 'Playa', 'Otro']
@@ -106,7 +107,7 @@ export function Activities() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Fecha</label>
-                <input type="date" className={inputCls} value={form.date} onChange={e => f('date', e.target.value)} />
+                <DateInput className={inputCls} value={form.date} onChange={v => f('date', v)} />
               </div>
               <div>
                 <label className={labelCls}>Ciudad</label>

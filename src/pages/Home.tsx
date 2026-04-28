@@ -7,6 +7,7 @@ import { Modal } from '../components/ui/Modal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { buildDemoTrip } from '../utils/demoData'
 import { cloudEnabled } from '../lib/cloudSync'
+import { DateInput } from '../components/ui/DateInput'
 
 function formatDate(d: string) {
   try { return d.split('-').reverse().join('/') }
@@ -279,11 +280,11 @@ export function Home() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de salida</label>
-                <input type="date" className={inputCls} value={startDate} onChange={e => setStartDate(e.target.value)} />
+                <DateInput className={inputCls} value={startDate} onChange={setStartDate} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de vuelta</label>
-                <input type="date" className={inputCls} value={endDate} onChange={e => setEndDate(e.target.value)} />
+                <DateInput className={inputCls} value={endDate} onChange={setEndDate} />
               </div>
             </div>
             <div>

@@ -5,6 +5,8 @@ import { useTripsStore } from '../../store/tripsStore'
 import { useMask } from '../../store/settingsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
+import { DateInput } from '../../components/ui/DateInput'
+import { MoneyInput } from '../../components/ui/MoneyInput'
 import type { Expense } from '../../types'
 
 const fmtDate = (d: string) => d ? d.split('-').reverse().join('/') : ''
@@ -248,27 +250,27 @@ export function Expenses() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Precio</label>
-                <input type="number" min="0" step="0.01" className={inputCls}
-                  value={form.price} onChange={e => f('price', parseFloat(e.target.value) || 0)} />
+                <MoneyInput className={inputCls} value={form.price}
+                  onChange={v => f('price', v)} />
               </div>
               <div>
                 <label className={labelCls}>Moneda</label>
                 <select className={inputCls + ' bg-white dark:bg-gray-700'}
                   value={form.currency} onChange={e => f('currency', e.target.value)}>
-                  {['USD', 'EUR', 'ARS', 'GBP', 'BRL'].map(c => <option key={c}>{c}</option>)}
+                  {['USD', 'EUR', 'ARS', 'GBP', 'BRL', 'CLP', 'MXN', 'COP'].map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Pagado</label>
-                <input type="number" min="0" step="0.01" className={inputCls}
-                  value={form.paid} onChange={e => f('paid', parseFloat(e.target.value) || 0)} />
+                <MoneyInput className={inputCls} value={form.paid}
+                  onChange={v => f('paid', v)} />
               </div>
               <div>
                 <label className={labelCls}>Fecha</label>
-                <input type="date" className={inputCls}
-                  value={form.date} onChange={e => f('date', e.target.value)} />
+                <DateInput className={inputCls} value={form.date}
+                  onChange={v => f('date', v)} />
               </div>
             </div>
             <div>
