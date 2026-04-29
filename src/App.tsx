@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useEffect } from 'react'
-import { Share2, Sun, Moon, Monitor, Eye, EyeOff } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Share2, Sun, Moon, Monitor, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useTripsStore } from './store/tripsStore'
 import { useSettingsStore } from './store/settingsStore'
+import { useAuthStore } from './store/authStore'
 import { Home } from './pages/Home'
+import { WelcomeScreen } from './pages/WelcomeScreen'
 import { TripDashboard } from './pages/trip/TripDashboard'
 import { Transports } from './pages/trip/Transports'
 import { Itinerary } from './pages/trip/Itinerary'
@@ -155,17 +157,46 @@ function ThemeApplier() {
   return null
 }
 
+function AppRoutes() {
+  const { user, loading } = useAuthStore()
+  const [skipped, setSkipped] = useState(() => localStorage.getItem('auth-skipped') === '1')
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-blue-600">
+        <Loader2 size={36} className="animate-spin text-white" />
+      </div>
+    )
+  }
+
+  const isAnon = !user || user.isAnonymous
+  if (isAnon && !skipped) {
+    return (
+      <WelcomeScreen
+        onSkip={() => {
+          localStorage.setItem('auth-skipped', '1')
+          setSkipped(true)
+        }}
+      />
+    )
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/privacidad" element={<Privacy />} />
+      <Route path="/viaje/:tripId/*" element={<TripLayout />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}
+
 export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ThemeApplier />
       <AppLoader />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/privacidad" element={<Privacy />} />
-        <Route path="/viaje/:tripId/*" element={<TripLayout />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   )
 }
