@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { X, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react'
-import { signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } from '../../lib/firebase'
+import { auth, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } from '../../lib/firebase'
+import { useAuthStore } from '../../store/authStore'
 
 type Mode = 'login' | 'register' | 'forgot'
 
@@ -41,9 +42,14 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
   const reset = (m: Mode) => { setMode(m); setError(''); setSuccess(''); setPassword(''); setConfirm('') }
 
+  const syncAndClose = () => {
+    useAuthStore.getState().setUser(auth.currentUser)
+    onClose()
+  }
+
   const handleGoogle = async () => {
     setBusy(true); setError('')
-    try { await signInWithGoogle(); onClose() }
+    try { await signInWithGoogle(); syncAndClose() }
     catch (e) { const msg = friendlyError(e); if (msg) setError(msg) }
     finally { setBusy(false) }
   }
@@ -51,21 +57,19 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const handleSubmit = async () => {
     setError(''); setSuccess('')
     if (!email.trim()) { setError('Ingresá tu email.'); return }
-
     if (mode !== 'forgot' && !password) { setError('Ingresá tu contraseña.'); return }
     if (mode === 'register' && password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return }
     if (mode === 'register' && password !== confirm) {
       setError('Las contraseñas no coinciden.'); return
     }
-
     setBusy(true)
     try {
       if (mode === 'login') {
         await signInWithEmail(email, password)
-        onClose()
+        syncAndClose()
       } else if (mode === 'register') {
         await signUpWithEmail(email, password)
-        onClose()
+        syncAndClose()
       } else {
         await resetPassword(email)
         setSuccess('Te enviamos un email para restablecer tu contraseña.')
