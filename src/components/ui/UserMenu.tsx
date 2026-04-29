@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { LogIn, LogOut, User, Loader2, X } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
-import { signInWithGoogle, signOutUser } from '../../lib/firebase'
+import { signOutUser } from '../../lib/firebase'
+import { AuthModal } from './AuthModal'
 
 interface UserMenuProps {
   variant?: 'light' | 'dark'
@@ -10,15 +11,10 @@ interface UserMenuProps {
 export function UserMenu({ variant = 'dark' }: UserMenuProps) {
   const { user, loading } = useAuthStore()
   const [busy, setBusy] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
 
   if (loading) return <div className="w-9 h-9" />
-
-  const handleLogin = async () => {
-    setBusy(true)
-    try { await signInWithGoogle() } catch { /* user cancelled */ }
-    finally { setBusy(false) }
-  }
 
   const handleSignOut = async () => {
     setBusy(true)
@@ -33,9 +29,12 @@ export function UserMenu({ variant = 'dark' }: UserMenuProps) {
 
   if (isAnon) {
     return (
-      <button onClick={handleLogin} disabled={busy} title="Iniciar sesión con Google" className={btnCls}>
-        {busy ? <Loader2 size={18} className="animate-spin" /> : <LogIn size={18} />}
-      </button>
+      <>
+        <button onClick={() => setShowAuth(true)} title="Iniciar sesión" className={btnCls}>
+          <LogIn size={18} />
+        </button>
+        {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
+      </>
     )
   }
 
