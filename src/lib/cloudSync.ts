@@ -73,10 +73,15 @@ export async function deleteCloudTrip(cloudCode: string): Promise<void> {
 
 export function subscribeTrip(cloudCode: string, _tripId: string, onUpdate: (trip: Trip) => void): () => void {
   if (!db) return () => {}
-  ensureAuth().then(() => {}).catch(console.error)
-  return onSnapshot(doc(db, 'trips', cloudCode), (snap) => {
-    if (snap.exists() && !snap.metadata.hasPendingWrites) {
-      onUpdate(snap.data() as Trip)
-    }
-  })
+  let unsub: (() => void) | null = null
+  ensureAuth()
+    .then(() => {
+      unsub = onSnapshot(doc(db!, 'trips', cloudCode), (snap) => {
+        if (snap.exists() && !snap.metadata.hasPendingWrites) {
+          onUpdate(snap.data() as Trip)
+        }
+      })
+    })
+    .catch(console.error)
+  return () => { unsub?.() }
 }
