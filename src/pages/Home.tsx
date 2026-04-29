@@ -9,6 +9,9 @@ import { buildDemoTrip } from '../utils/demoData'
 import { cloudEnabled } from '../lib/cloudSync'
 import { DateInput } from '../components/ui/DateInput'
 import { UserMenu } from '../components/ui/UserMenu'
+import { ClaimTravelerModal } from '../components/ui/ClaimTravelerModal'
+import { auth } from '../lib/firebase'
+import type { Traveler } from '../types'
 
 function formatDate(d: string) {
   try { return d.split('-').reverse().join('/') }
@@ -18,7 +21,7 @@ function formatDate(d: string) {
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
 
 export function Home() {
-  const { trips, loaded, load, addTrip, deleteTrip, importTrip, syncToCloud, joinTrip } = useTripsStore()
+  const { trips, loaded, load, addTrip, deleteTrip, importTrip, syncToCloud, joinTrip, claimTraveler } = useTripsStore()
   const { theme, privacyMode, cycleTheme, togglePrivacy } = useSettingsStore()
   const mask = useMask()
   const navigate = useNavigate()
@@ -40,15 +43,22 @@ export function Home() {
   const [joinError, setJoinError] = useState('')
   const [joining, setJoining] = useState(false)
 
+  const [claimCtx, setClaimCtx] = useState<{ tripId: string; travelers: Traveler[] } | null>(null)
+
   useEffect(() => { load() }, [load])
 
   const handleCreate = () => {
     if (!name.trim()) return
-    const travelers = travelersRaw.split(',').map(s => s.trim()).filter(Boolean)
-    const id = addTrip(name.trim(), startDate, endDate, travelers, currency)
+    const travelerNames = travelersRaw.split(',').map(s => s.trim()).filter(Boolean)
+    const id = addTrip(name.trim(), startDate, endDate, travelerNames, currency)
     setShowNew(false)
     setName(''); setStartDate(''); setEndDate(''); setTravelersRaw(''); setCurrency('USD')
-    navigate(`/viaje/${id}/dashboard`)
+    const created = useTripsStore.getState().trips.find(t => t.id === id)
+    if (created && created.travelers.length > 0) {
+      setClaimCtx({ tripId: id, travelers: created.travelers })
+    } else {
+      navigate(`/viaje/${id}/dashboard`)
+    }
   }
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
@@ -108,7 +118,14 @@ export function Home() {
       if (tripId) {
         setShowJoin(false)
         setJoinCode('')
-        navigate(`/viaje/${tripId}/dashboard`)
+        const joined = useTripsStore.getState().trips.find(t => t.id === tripId)
+        const uid = auth.currentUser?.uid
+        const unclaimed = joined?.travelers.filter(v => !v.userId || v.userId === uid) ?? []
+        if (unclaimed.length > 0) {
+          setClaimCtx({ tripId, travelers: unclaimed })
+        } else {
+          navigate(`/viaje/${tripId}/dashboard`)
+        }
       } else {
         setJoinError('No se encontró un viaje con ese código.')
       }
@@ -241,6 +258,21 @@ export function Home() {
       </div>
 
       <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+
+      {claimCtx && (
+        <ClaimTravelerModal
+          travelers={claimCtx.travelers}
+          onClaim={(travelerId) => {
+            claimTraveler(claimCtx.tripId, travelerId)
+            navigate(`/viaje/${claimCtx.tripId}/dashboard`)
+            setClaimCtx(null)
+          }}
+          onSkip={() => {
+            navigate(`/viaje/${claimCtx.tripId}/dashboard`)
+            setClaimCtx(null)
+          }}
+        />
+      )}
 
       <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-2 pointer-events-none">
         <Link to="/privacidad" className="text-xs text-gray-400 dark:text-gray-600 hover:underline pointer-events-auto">

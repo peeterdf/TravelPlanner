@@ -3,6 +3,7 @@ export type TransportType = 'avión' | 'tren' | 'bus' | 'auto' | 'barco' | 'otro
 export interface Traveler {
   id: string
   name: string
+  userId?: string
 }
 
 export interface Transport {

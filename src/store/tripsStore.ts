@@ -85,6 +85,9 @@ interface TripsState {
   deletePackingCategory: (tripId: string, categoryId: string) => void
   resetPackingChecked: (tripId: string) => void
 
+  // Claim traveler identity
+  claimTraveler: (tripId: string, travelerId: string) => void
+
   // Cloud sync
   syncToCloud: (tripId: string) => Promise<void>
   joinTrip: (code: string) => Promise<string | null>
@@ -464,6 +467,17 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       }
     })
     persistLocal(trips)
+    set({ trips })
+  },
+
+  claimTraveler: (tripId, travelerId) => {
+    const uid = auth.currentUser?.uid
+    if (!uid) return
+    const trips = get().trips.map(t => {
+      if (t.id !== tripId) return t
+      return { ...t, travelers: t.travelers.map(v => v.id === travelerId ? { ...v, userId: uid } : v) }
+    })
+    persist(trips)
     set({ trips })
   },
 
