@@ -28,11 +28,17 @@ export const cloudEnabled = true
 
 const googleProvider = new GoogleAuthProvider()
 
-onAuthStateChanged(auth, (user) => {
-  useAuthStore.getState().setUser(user)
+let authResolved = false
+const authReadyPromise = new Promise<void>(resolve => {
+  onAuthStateChanged(auth, (user) => {
+    useAuthStore.getState().setUser(user)
+    if (!authResolved) { authResolved = true; resolve() }
+  })
 })
 
 export async function ensureAuth(): Promise<void> {
+  // Wait for Firebase to restore the persisted session before deciding
+  if (!authResolved) await authReadyPromise
   if (auth.currentUser) return
   try {
     await signInAnonymously(auth)
