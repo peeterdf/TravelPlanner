@@ -1,35 +1,48 @@
 import { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Wallet, CheckCircle2, Users, ArrowRight } from 'lucide-react'
+import { Plus, Trash2, Pencil, Wallet, CheckCircle2, Users, ArrowRight, Plane, Building2, UtensilsCrossed, Bus, Map, ShoppingBag, Package } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
 import { useMask } from '../../store/settingsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { DateInput } from '../../components/ui/DateInput'
 import { MoneyInput } from '../../components/ui/MoneyInput'
-import type { Expense } from '../../types'
+import type { Expense, ExpenseCategory } from '../../types'
 
 const fmtDate = (d: string) => d ? d.split('-').reverse().join('/') : ''
 
+const CATEGORIES: { value: ExpenseCategory; label: string; icon: React.ReactNode }[] = [
+  { value: 'vuelo',       label: 'Vuelo',       icon: <Plane size={13} /> },
+  { value: 'alojamiento', label: 'Alojamiento',  icon: <Building2 size={13} /> },
+  { value: 'comida',      label: 'Comida',       icon: <UtensilsCrossed size={13} /> },
+  { value: 'transporte',  label: 'Transporte',   icon: <Bus size={13} /> },
+  { value: 'actividad',   label: 'Actividad',    icon: <Map size={13} /> },
+  { value: 'compra',      label: 'Compra',       icon: <ShoppingBag size={13} /> },
+  { value: 'otro',        label: 'Otro',         icon: <Package size={13} /> },
+]
+
 const EMPTY: Omit<Expense, 'id'> = {
   concept: '', date: '', detail: '', price: 0, paid: 0,
-  reserved: false, currency: 'USD', paidBy: '', includedTravelers: [],
+  reserved: false, currency: 'USD', category: undefined, paidBy: '', includedTravelers: [],
 }
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
 const labelCls = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1'
 
+const round2 = (n: number) => Math.round(n * 100) / 100
+
 function calcSettlements(net: Record<string, number>) {
-  const pos = Object.entries(net).filter(([, v]) => v > 0.5).map(([n, v]) => [n, v] as [string, number])
-  const neg = Object.entries(net).filter(([, v]) => v < -0.5).map(([n, v]) => [n, -v] as [string, number])
+  const pos = Object.entries(net).filter(([, v]) => v > 0.005).map(([n, v]) => [n, round2(v)] as [string, number])
+  const neg = Object.entries(net).filter(([, v]) => v < -0.005).map(([n, v]) => [n, round2(-v)] as [string, number])
   const result: { from: string; to: string; amount: number }[] = []
   let i = 0, j = 0
   while (i < pos.length && j < neg.length) {
-    const amt = Math.min(pos[i][1], neg[j][1])
+    const amt = round2(Math.min(pos[i][1], neg[j][1]))
     result.push({ from: neg[j][0], to: pos[i][0], amount: amt })
-    pos[i][1] -= amt; neg[j][1] -= amt
-    if (pos[i][1] < 0.5) i++
-    if (neg[j][1] < 0.5) j++
+    pos[i][1] = round2(pos[i][1] - amt)
+    neg[j][1] = round2(neg[j][1] - amt)
+    if (pos[i][1] < 0.005) i++
+    if (neg[j][1] < 0.005) j++
   }
   return result
 }
@@ -68,9 +81,9 @@ export function Expenses() {
   const netBalance: Record<string, number> = {}
   for (const e of splitExpenses) {
     const included = e.includedTravelers?.length ? e.includedTravelers : travelerNames
-    const share = included.length > 0 ? e.price / included.length : 0
-    netBalance[e.paidBy!] = (netBalance[e.paidBy!] ?? 0) + e.price
-    for (const p of included) netBalance[p] = (netBalance[p] ?? 0) - share
+    const share = included.length > 0 ? round2(e.price / included.length) : 0
+    netBalance[e.paidBy!] = round2((netBalance[e.paidBy!] ?? 0) + e.price)
+    for (const p of included) netBalance[p] = round2((netBalance[p] ?? 0) - share)
   }
 
   const settlements = calcSettlements(netBalance)
@@ -158,6 +171,14 @@ export function Expenses() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{e.concept}</p>
+                      {e.category && (() => {
+                        const cat = CATEGORIES.find(c => c.value === e.category)
+                        return cat ? (
+                          <span className="shrink-0 inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">
+                            {cat.icon}{cat.label}
+                          </span>
+                        ) : null
+                      })()}
                       {e.reserved && (
                         <span className="shrink-0 inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full">
                           <CheckCircle2 size={11} /> Reservado
@@ -246,6 +267,22 @@ export function Expenses() {
               <label className={labelCls}>Concepto *</label>
               <input className={inputCls} placeholder="Alojamiento París"
                 value={form.concept} onChange={e => f('concept', e.target.value)} autoFocus />
+            </div>
+            <div>
+              <label className={labelCls}>Categoría</label>
+              <div className="flex flex-wrap gap-1.5">
+                {CATEGORIES.map(cat => (
+                  <button key={cat.value} type="button"
+                    onClick={() => f('category', form.category === cat.value ? undefined as unknown as string : cat.value)}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                      form.category === cat.value
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'
+                    }`}>
+                    {cat.icon}{cat.label}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

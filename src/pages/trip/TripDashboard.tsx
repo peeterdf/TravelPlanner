@@ -17,14 +17,16 @@ function formatDate(d: string) {
   return `${day}/${m}`
 }
 
+const round2 = (n: number) => Math.round(n * 100) / 100
+
 function calcNetBalance(trip: { expenses: { paidBy?: string; price: number; includedTravelers?: string[] }[]; travelers: { name: string }[] }) {
   const travelerNames = trip.travelers.map(t => t.name)
   const net: Record<string, number> = {}
   for (const e of trip.expenses.filter(e => e.paidBy)) {
     const included = e.includedTravelers?.length ? e.includedTravelers : travelerNames
-    const share = included.length > 0 ? e.price / included.length : 0
-    net[e.paidBy!] = (net[e.paidBy!] ?? 0) + e.price
-    for (const p of included) net[p] = (net[p] ?? 0) - share
+    const share = included.length > 0 ? round2(e.price / included.length) : 0
+    net[e.paidBy!] = round2((net[e.paidBy!] ?? 0) + e.price)
+    for (const p of included) net[p] = round2((net[p] ?? 0) - share)
   }
   return net
 }

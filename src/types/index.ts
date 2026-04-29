@@ -48,6 +48,8 @@ export interface Activity {
   notes: string
 }
 
+export type ExpenseCategory = 'vuelo' | 'alojamiento' | 'comida' | 'transporte' | 'actividad' | 'compra' | 'otro'
+
 export interface Expense {
   id: string
   concept: string
@@ -57,6 +59,7 @@ export interface Expense {
   paid: number
   reserved: boolean
   currency: string
+  category?: ExpenseCategory
   paidBy?: string
   includedTravelers?: string[]
 }

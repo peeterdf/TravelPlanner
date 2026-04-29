@@ -5,7 +5,8 @@ import type {
 } from '../types'
 import { loadTrips, saveTrips } from '../utils/storage'
 import { DEFAULT_PACKING_CATEGORIES } from '../utils/validate'
-import { uploadTrip as cloudUpload, fetchTrip, subscribeTrip, generateCloudCode, deleteCloudTrip } from '../lib/cloudSync'
+import { scheduledUpload, uploadTrip as cloudUpload, fetchTrip, subscribeTrip, generateCloudCode, deleteCloudTrip } from '../lib/cloudSync'
+import { useSyncStore } from './syncStore'
 
 function genId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -88,15 +89,17 @@ interface TripsState {
   joinTrip: (code: string) => Promise<string | null>
 }
 
-const debounceTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const unsubscribers = new Map<string, () => void>()
 
 function persist(trips: Trip[]) {
   saveTrips(trips).catch(console.error)
+  const { setStatus, setError } = useSyncStore.getState()
   for (const t of trips) {
-    if (!t.synced) continue
-    clearTimeout(debounceTimers.get(t.id))
-    debounceTimers.set(t.id, setTimeout(() => cloudUpload(t).catch(console.error), 800))
+    if (!t.synced || !t.cloudCode) continue
+    scheduledUpload(t, (status) => {
+      if (status === 'error') setError(t.id, 'Error al sincronizar. Revisá tu conexión.')
+      else setStatus(t.id, status)
+    })
   }
 }
 

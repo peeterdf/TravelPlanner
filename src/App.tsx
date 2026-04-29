@@ -16,6 +16,7 @@ import { Notes } from './pages/trip/Notes'
 import { Audit } from './pages/trip/Audit'
 import { Header } from './components/layout/Header'
 import { BottomNav } from './components/layout/BottomNav'
+import { SyncDot } from './components/ui/SyncDot'
 import type { Trip } from './types'
 
 function shareTrip(trip: Trip) {
@@ -59,7 +60,7 @@ function TripLayout() {
   const tripId = parts[2]
   const section = parts[3] ?? ''
 
-  const { trips } = useTripsStore()
+  const { trips, syncToCloud } = useTripsStore()
   const trip = trips.find(t => t.id === tripId)
   const { theme, privacyMode, cycleTheme, togglePrivacy } = useSettingsStore()
 
@@ -94,6 +95,9 @@ function TripLayout() {
             >
               {privacyMode ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
+            {trip?.synced && (
+              <SyncDot tripId={tripId} onRetry={() => syncToCloud(tripId)} />
+            )}
             {trip && (
               <button
                 onClick={() => shareTrip(trip)}

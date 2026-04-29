@@ -13,6 +13,39 @@ export function generateCloudCode(): string {
     .slice(0, 20)
 }
 
+// Debounce + throttle state per cloudCode
+const uploadState = new Map<string, { timer: ReturnType<typeof setTimeout>; lastUpload: number }>()
+const DEBOUNCE_MS = 800
+const MIN_INTERVAL_MS = 5000
+
+export function scheduledUpload(
+  trip: Trip,
+  onStatus: (s: 'syncing' | 'synced' | 'error') => void,
+): void {
+  if (!db || !trip.cloudCode) return
+  const code = trip.cloudCode
+  const state = uploadState.get(code)
+  if (state) clearTimeout(state.timer)
+
+  const lastUpload = state?.lastUpload ?? 0
+  const elapsed = Date.now() - lastUpload
+  const delay = Math.max(DEBOUNCE_MS, MIN_INTERVAL_MS - elapsed)
+
+  const timer = setTimeout(async () => {
+    uploadState.set(code, { timer, lastUpload: Date.now() })
+    onStatus('syncing')
+    try {
+      await ensureAuth()
+      await setDoc(doc(db!, 'trips', code), trip)
+      onStatus('synced')
+    } catch {
+      onStatus('error')
+    }
+  }, delay)
+
+  uploadState.set(code, { timer, lastUpload })
+}
+
 export async function uploadTrip(trip: Trip): Promise<void> {
   if (!db || !trip.cloudCode) return
   await ensureAuth()
