@@ -1,11 +1,15 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Solo la colección /trips/{cloudCode}: cualquier usuario autenticado (incluye anónimos)
     match /trips/{cloudCode} {
-      allow read, write: if request.auth != null;
+      // Cualquier usuario autenticado puede leer y crear
+      allow read, create: if request.auth != null;
+      // Cualquier usuario autenticado puede actualizar (colaboración)
+      allow update: if request.auth != null;
+      // Solo el dueño puede borrar
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.ownerUid;
     }
-    // Todo lo demás: denegado
     match /{document=**} {
       allow read, write: if false;
     }

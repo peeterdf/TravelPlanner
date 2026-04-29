@@ -113,6 +113,7 @@ export interface Trip {
   auditLog?: AuditEntry[]
   synced?: boolean
   cloudCode?: string
+  ownerUid?: string
 }
 
 export interface ItineraryConflict {

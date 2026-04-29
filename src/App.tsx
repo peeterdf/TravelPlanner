@@ -17,6 +17,8 @@ import { Audit } from './pages/trip/Audit'
 import { Header } from './components/layout/Header'
 import { BottomNav } from './components/layout/BottomNav'
 import { SyncDot } from './components/ui/SyncDot'
+import { UserMenu } from './components/ui/UserMenu'
+import { Privacy } from './pages/Privacy'
 import type { Trip } from './types'
 
 function shareTrip(trip: Trip) {
@@ -98,6 +100,7 @@ function TripLayout() {
             {trip?.synced && (
               <SyncDot tripId={tripId} onRetry={() => syncToCloud(tripId)} />
             )}
+            <UserMenu />
             {trip && (
               <button
                 onClick={() => shareTrip(trip)}
@@ -159,6 +162,7 @@ export default function App() {
       <AppLoader />
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/privacidad" element={<Privacy />} />
         <Route path="/viaje/:tripId/*" element={<TripLayout />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

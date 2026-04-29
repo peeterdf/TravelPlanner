@@ -7,6 +7,7 @@ import { loadTrips, saveTrips } from '../utils/storage'
 import { DEFAULT_PACKING_CATEGORIES } from '../utils/validate'
 import { scheduledUpload, uploadTrip as cloudUpload, fetchTrip, subscribeTrip, generateCloudCode, deleteCloudTrip } from '../lib/cloudSync'
 import { useSyncStore } from './syncStore'
+import { auth } from '../lib/firebase'
 
 function genId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -192,7 +193,8 @@ export const useTripsStore = create<TripsState>((set, get) => ({
 
   deleteTrip: (id) => {
     const trip = get().trips.find(t => t.id === id)
-    if (trip?.synced && trip.cloudCode) {
+    const isOwner = !trip?.ownerUid || trip.ownerUid === auth.currentUser?.uid
+    if (trip?.synced && trip.cloudCode && isOwner) {
       deleteCloudTrip(trip.cloudCode).catch(console.error)
     }
     const trips = get().trips.filter(t => t.id !== id)
@@ -469,7 +471,8 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     const trip = get().trips.find(t => t.id === tripId)
     if (!trip) return
     const cloudCode = trip.cloudCode ?? generateCloudCode()
-    const synced = { ...trip, synced: true, cloudCode }
+    const ownerUid = trip.ownerUid ?? auth.currentUser?.uid ?? undefined
+    const synced = { ...trip, synced: true, cloudCode, ownerUid }
     await cloudUpload(synced)
     const trips = get().trips.map(t => t.id === tripId ? synced : t)
     saveTrips(trips).catch(console.error)

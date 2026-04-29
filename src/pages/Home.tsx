@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload, Sun, Moon, Monitor, Eye, EyeOff, Cloud, CloudUpload, UserPlus, Copy, Check } from 'lucide-react'
 import { useTripsStore } from '../store/tripsStore'
 import { useSettingsStore, useMask } from '../store/settingsStore'
@@ -8,6 +8,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { buildDemoTrip } from '../utils/demoData'
 import { cloudEnabled } from '../lib/cloudSync'
 import { DateInput } from '../components/ui/DateInput'
+import { UserMenu } from '../components/ui/UserMenu'
 
 function formatDate(d: string) {
   try { return d.split('-').reverse().join('/') }
@@ -127,7 +128,7 @@ export function Home() {
             <h1 className="text-2xl font-bold">Mis viajes</h1>
             <p className="text-blue-200 text-sm mt-1">Organizá tus aventuras</p>
           </div>
-          <div className="flex gap-1 -mr-1 mt-1">
+          <div className="flex gap-1 -mr-1 mt-1 items-center">
             <button
               onClick={cycleTheme}
               className="p-2 text-blue-200 hover:text-white transition-colors"
@@ -143,6 +144,7 @@ export function Home() {
             >
               {privacyMode ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
+            <UserMenu variant="light" />
           </div>
         </div>
         {trips.length > 0 && !trips.find(t => t.id === 'demo-europa-2024') && (
@@ -239,6 +241,12 @@ export function Home() {
       </div>
 
       <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+
+      <div className="fixed bottom-0 left-0 right-0 flex justify-center pb-2 pointer-events-none">
+        <Link to="/privacidad" className="text-xs text-gray-400 dark:text-gray-600 hover:underline pointer-events-auto">
+          Política de privacidad
+        </Link>
+      </div>
 
       {/* FAB: Unirse con código (solo si Firebase está configurado) */}
       {cloudEnabled && (
