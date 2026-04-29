@@ -25,7 +25,7 @@ function toFirestore(trip: Trip): object {
 
 export function scheduledUpload(
   trip: Trip,
-  onStatus: (s: 'syncing' | 'synced' | 'error') => void,
+  onStatus: (s: 'syncing' | 'synced' | 'error', msg?: string) => void,
 ): void {
   if (!db || !trip.cloudCode) return
   const code = trip.cloudCode
@@ -45,7 +45,11 @@ export function scheduledUpload(
       onStatus('synced')
     } catch (err) {
       console.error('Cloud sync error:', err)
-      onStatus('error')
+      const code2 = (err as { code?: string }).code
+      const msg = code2 === 'permission-denied'
+        ? 'Sin permisos en Firestore. Desplegá las Security Rules en Firebase Console.'
+        : 'Error al sincronizar. Revisá tu conexión.'
+      onStatus('error', msg)
     }
   }, delay)
 
@@ -74,8 +78,10 @@ export async function deleteCloudTrip(cloudCode: string): Promise<void> {
 export function subscribeTrip(cloudCode: string, _tripId: string, onUpdate: (trip: Trip) => void): () => void {
   if (!db) return () => {}
   let unsub: (() => void) | null = null
+  let cancelled = false
   ensureAuth()
     .then(() => {
+      if (cancelled) return
       unsub = onSnapshot(doc(db!, 'trips', cloudCode), (snap) => {
         if (snap.exists() && !snap.metadata.hasPendingWrites) {
           onUpdate(snap.data() as Trip)
@@ -83,5 +89,5 @@ export function subscribeTrip(cloudCode: string, _tripId: string, onUpdate: (tri
       })
     })
     .catch(console.error)
-  return () => { unsub?.() }
+  return () => { cancelled = true; unsub?.() }
 }

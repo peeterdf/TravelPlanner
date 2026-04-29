@@ -100,8 +100,8 @@ function persist(trips: Trip[]) {
   const { setStatus, setError } = useSyncStore.getState()
   for (const t of trips) {
     if (!t.synced || !t.cloudCode) continue
-    scheduledUpload(t, (status) => {
-      if (status === 'error') setError(t.id, 'Error al sincronizar. Revisá tu conexión.')
+    scheduledUpload(t, (status, msg) => {
+      if (status === 'error') setError(t.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
       else setStatus(t.id, status)
     })
   }
