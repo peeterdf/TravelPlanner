@@ -48,6 +48,7 @@ export function TripDashboard() {
   const [editStart, setEditStart] = useState('')
   const [editEnd, setEditEnd] = useState('')
   const [editCurrency, setEditCurrency] = useState('')
+  const [editDateError, setEditDateError] = useState('')
 
   if (!trip) return (
     <div className="p-6 text-center text-gray-500 dark:text-gray-400">
@@ -326,13 +327,14 @@ export function TripDashboard() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Fecha de salida</label>
-                <DateInput className={inputCls} value={editStart} onChange={setEditStart} />
+                <DateInput className={inputCls} value={editStart} onChange={v => { setEditStart(v); setEditDateError('') }} />
               </div>
               <div>
                 <label className={labelCls}>Fecha de vuelta</label>
-                <DateInput className={inputCls} value={editEnd} onChange={setEditEnd} />
+                <DateInput className={inputCls} value={editEnd} onChange={v => { setEditEnd(v); setEditDateError('') }} />
               </div>
             </div>
+            {editDateError && <p className="text-xs text-red-500 dark:text-red-400">{editDateError}</p>}
             <div>
               <label className={labelCls}>Moneda</label>
               <div className="flex flex-wrap gap-2">
@@ -347,6 +349,7 @@ export function TripDashboard() {
             <button
               onClick={() => {
                 if (!editName.trim()) return
+                if (editStart && editEnd && editEnd < editStart) { setEditDateError('La fecha de vuelta no puede ser antes que la de salida.'); return }
                 updateTrip(tripId!, { name: editName.trim(), startDate: editStart, endDate: editEnd, currency: editCurrency })
                 setShowEdit(false)
               }}

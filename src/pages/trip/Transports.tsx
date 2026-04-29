@@ -30,6 +30,8 @@ export function Transports() {
   const [form, setForm] = useState<Omit<Transport, 'id'>>(EMPTY)
   const [editId, setEditId] = useState<string | null>(null)
 
+  const [formError, setFormError] = useState('')
+
   if (!trip) return null
 
   const sorted = [...trip.transports].sort((a, b) =>
@@ -39,9 +41,28 @@ export function Transports() {
   const openEdit = (t: Transport) => { setForm({ ...t }); setEditId(t.id); setModal('edit') }
 
   const handleSave = () => {
-    if (!form.origin || !form.destination) return
-    if (modal === 'add') addTransport(tripId!, form)
-    else if (modal === 'edit' && editId) updateTransport(tripId!, { ...form, id: editId })
+    if (!form.origin.trim() || !form.destination.trim()) return
+    if (form.departureDate && form.arrivalDate && form.arrivalDate < form.departureDate) {
+      setFormError('La llegada no puede ser antes que la salida.')
+      return
+    }
+    if (form.departureDate && form.arrivalDate && form.arrivalDate === form.departureDate
+        && form.departureTime && form.arrivalTime && form.arrivalTime < form.departureTime) {
+      setFormError('La hora de llegada no puede ser antes que la de salida.')
+      return
+    }
+    setFormError('')
+    const data = {
+      ...form,
+      origin: form.origin.trim(),
+      destination: form.destination.trim(),
+      company: form.company.trim(),
+      bookingCode: form.bookingCode.trim(),
+      notes: form.notes.trim(),
+      url: form.url.trim(),
+    }
+    if (modal === 'add') addTransport(tripId!, data)
+    else if (modal === 'edit' && editId) updateTransport(tripId!, { ...data, id: editId })
     setModal(null)
   }
 
@@ -181,6 +202,7 @@ export function Transports() {
               <label className={labelCls}>Link de reserva</label>
               <input type="url" className={inputCls} placeholder="https://www.ryanair.com/..." value={form.url} onChange={e => f('url', e.target.value)} />
             </div>
+            {formError && <p className="text-xs text-red-500 dark:text-red-400">{formError}</p>}
             <button onClick={handleSave} disabled={!form.origin || !form.destination}
               className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold text-sm hover:bg-blue-700 disabled:opacity-40 transition-colors">
               {modal === 'add' ? 'Agregar' : 'Guardar cambios'}

@@ -42,9 +42,15 @@ export function Activities() {
   const openEdit = (a: Activity) => { setForm({ ...a }); setEditId(a.id); setModal('edit') }
 
   const handleSave = () => {
-    if (!form.place) return
-    if (modal === 'add') addActivity(tripId!, form)
-    else if (modal === 'edit' && editId) updateActivity(tripId!, { ...form, id: editId })
+    if (!form.place.trim()) return
+    const data = {
+      ...form,
+      place: form.place.trim(),
+      city: form.city.trim(),
+      notes: form.notes.trim(),
+    }
+    if (modal === 'add') addActivity(tripId!, data)
+    else if (modal === 'edit' && editId) updateActivity(tripId!, { ...data, id: editId })
     setModal(null)
   }
 

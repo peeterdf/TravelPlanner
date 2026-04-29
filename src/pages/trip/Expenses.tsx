@@ -57,6 +57,7 @@ export function Expenses() {
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
   const [form, setForm] = useState<Omit<Expense, 'id'>>(EMPTY)
   const [editId, setEditId] = useState<string | null>(null)
+  const [paidError, setPaidError] = useState('')
 
   const travelerNames = trip?.travelers.map(t => t.name) ?? []
 
@@ -99,10 +100,15 @@ export function Expenses() {
   }
 
   const handleSave = () => {
-    if (!form.concept) return
+    const concept = form.concept.trim()
+    if (!concept) return
+    if (form.paid > form.price) { setPaidError('El monto pagado no puede superar el precio total.'); return }
+    setPaidError('')
     const { category, paidBy, ...rest } = form
     const data = {
       ...rest,
+      concept,
+      detail: form.detail.trim(),
       ...(category ? { category } : {}),
       ...(paidBy ? { paidBy, includedTravelers: form.includedTravelers } : { includedTravelers: [] }),
     }
@@ -366,7 +372,8 @@ export function Expenses() {
               </div>
             )}
 
-            <button onClick={handleSave} disabled={!form.concept}
+            {paidError && <p className="text-xs text-red-500 dark:text-red-400">{paidError}</p>}
+            <button onClick={handleSave} disabled={!form.concept.trim()}
               className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold text-sm hover:bg-blue-700 disabled:opacity-40 transition-colors">
               {modal === 'add' ? 'Agregar' : 'Guardar cambios'}
             </button>

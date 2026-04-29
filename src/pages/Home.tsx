@@ -44,12 +44,21 @@ export function Home() {
   const [joining, setJoining] = useState(false)
 
   const [claimCtx, setClaimCtx] = useState<{ tripId: string; travelers: Traveler[] } | null>(null)
+  const [dateError, setDateError] = useState('')
 
   useEffect(() => { load() }, [load])
 
   const handleCreate = () => {
     if (!name.trim()) return
-    const travelerNames = travelersRaw.split(',').map(s => s.trim()).filter(Boolean)
+    if (startDate && endDate && endDate < startDate) { setDateError('La fecha de vuelta no puede ser antes que la de salida.'); return }
+    setDateError('')
+    const seen = new Set<string>()
+    const travelerNames = travelersRaw.split(',').map(s => s.trim()).filter(s => {
+      if (!s) return false
+      const key = s.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key); return true
+    })
     const id = addTrip(name.trim(), startDate, endDate, travelerNames, currency)
     setShowNew(false)
     setName(''); setStartDate(''); setEndDate(''); setTravelersRaw(''); setCurrency('USD')
@@ -320,13 +329,14 @@ export function Home() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de salida</label>
-                <DateInput className={inputCls} value={startDate} onChange={setStartDate} />
+                <DateInput className={inputCls} value={startDate} onChange={v => { setStartDate(v); setDateError('') }} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha de vuelta</label>
-                <DateInput className={inputCls} value={endDate} onChange={setEndDate} />
+                <DateInput className={inputCls} value={endDate} onChange={v => { setEndDate(v); setDateError('') }} />
               </div>
             </div>
+            {dateError && <p className="text-xs text-red-500 dark:text-red-400">{dateError}</p>}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Viajeros (separados por coma)</label>
               <input className={inputCls} placeholder="Ej: Ana, Bruno, Clara" value={travelersRaw} onChange={e => setTravelersRaw(e.target.value)} />

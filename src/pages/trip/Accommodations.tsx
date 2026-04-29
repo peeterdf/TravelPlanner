@@ -32,9 +32,19 @@ export function Accommodations() {
   const openEdit = (a: Accommodation) => { setForm({ ...a }); setEditId(a.id); setModal('edit') }
 
   const handleSave = () => {
-    if (!form.city) return
-    if (modal === 'add') addAccommodation(tripId!, form)
-    else if (modal === 'edit' && editId) updateAccommodation(tripId!, { ...form, id: editId })
+    if (!form.city.trim()) return
+    const data = {
+      ...form,
+      city: form.city.trim(),
+      confirmationCode: form.confirmationCode.trim(),
+      pin: form.pin.trim(),
+      phone: form.phone.trim(),
+      address: form.address.trim(),
+      notes: form.notes.trim(),
+      url: form.url.trim(),
+    }
+    if (modal === 'add') addAccommodation(tripId!, data)
+    else if (modal === 'edit' && editId) updateAccommodation(tripId!, { ...data, id: editId })
     setModal(null)
   }
 
