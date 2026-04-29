@@ -1,12 +1,19 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
+import { getAuth, signInAnonymously } from 'firebase/auth'
 
 const app = initializeApp({
-  apiKey: 'AIzaSyAH_lsPaig4CrSosY5iUEzTWB3NjSrVerA',
-  authDomain: 'travelplanner-c78cd.firebaseapp.com',
-  projectId: 'travelplanner-c78cd',
-  appId: '1:562229044568:web:d205164d946cf833dc712d',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 })
 
 export const db = getFirestore(app)
+export const auth = getAuth(app)
 export const cloudEnabled = true
+
+export async function ensureAuth(): Promise<void> {
+  if (auth.currentUser) return
+  await signInAnonymously(auth)
+}
