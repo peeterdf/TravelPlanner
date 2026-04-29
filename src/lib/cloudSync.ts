@@ -18,6 +18,11 @@ const uploadState = new Map<string, { timer: ReturnType<typeof setTimeout>; last
 const DEBOUNCE_MS = 800
 const MIN_INTERVAL_MS = 5000
 
+// Firestore rejects explicit `undefined` values — strip them before upload
+function toFirestore(trip: Trip): object {
+  return JSON.parse(JSON.stringify(trip))
+}
+
 export function scheduledUpload(
   trip: Trip,
   onStatus: (s: 'syncing' | 'synced' | 'error') => void,
@@ -36,9 +41,10 @@ export function scheduledUpload(
     onStatus('syncing')
     try {
       await ensureAuth()
-      await setDoc(doc(db!, 'trips', code), trip)
+      await setDoc(doc(db!, 'trips', code), toFirestore(trip))
       onStatus('synced')
-    } catch {
+    } catch (err) {
+      console.error('Cloud sync error:', err)
       onStatus('error')
     }
   }, delay)
@@ -49,7 +55,7 @@ export function scheduledUpload(
 export async function uploadTrip(trip: Trip): Promise<void> {
   if (!db || !trip.cloudCode) return
   await ensureAuth()
-  await setDoc(doc(db, 'trips', trip.cloudCode), trip)
+  await setDoc(doc(db, 'trips', trip.cloudCode), toFirestore(trip))
 }
 
 export async function fetchTrip(code: string): Promise<Trip | null> {

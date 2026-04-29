@@ -485,8 +485,13 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     const trip = get().trips.find(t => t.id === tripId)
     if (!trip) return
     const cloudCode = trip.cloudCode ?? generateCloudCode()
-    const ownerUid = trip.ownerUid ?? auth.currentUser?.uid ?? undefined
-    const synced = { ...trip, synced: true, cloudCode, ownerUid }
+    const ownerUid = trip.ownerUid ?? auth.currentUser?.uid
+    const synced: Trip = {
+      ...trip,
+      synced: true,
+      cloudCode,
+      ...(ownerUid ? { ownerUid } : {}),
+    }
     await cloudUpload(synced)
     const trips = get().trips.map(t => t.id === tripId ? synced : t)
     saveTrips(trips).catch(console.error)

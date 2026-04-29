@@ -23,7 +23,7 @@ const CATEGORIES: { value: ExpenseCategory; label: string; icon: React.ReactNode
 
 const EMPTY: Omit<Expense, 'id'> = {
   concept: '', date: '', detail: '', price: 0, paid: 0,
-  reserved: false, currency: 'USD', category: undefined, paidBy: '', includedTravelers: [],
+  reserved: false, currency: 'USD', paidBy: '', includedTravelers: [],
 }
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
@@ -100,7 +100,12 @@ export function Expenses() {
 
   const handleSave = () => {
     if (!form.concept) return
-    const data = { ...form, paidBy: form.paidBy || undefined, includedTravelers: form.paidBy ? form.includedTravelers : [] }
+    const { category, paidBy, ...rest } = form
+    const data = {
+      ...rest,
+      ...(category ? { category } : {}),
+      ...(paidBy ? { paidBy, includedTravelers: form.includedTravelers } : { includedTravelers: [] }),
+    }
     if (modal === 'add') addExpense(tripId!, data)
     else if (modal === 'edit' && editId) updateExpense(tripId!, { ...data, id: editId })
     setModal(null)
@@ -273,7 +278,9 @@ export function Expenses() {
               <div className="flex flex-wrap gap-1.5">
                 {CATEGORIES.map(cat => (
                   <button key={cat.value} type="button"
-                    onClick={() => f('category', form.category === cat.value ? undefined as unknown as string : cat.value)}
+                    onClick={() => setForm(p => form.category === cat.value
+                      ? (({ category: _, ...rest }) => rest)(p) as typeof p
+                      : { ...p, category: cat.value })}
                     className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
                       form.category === cat.value
                         ? 'bg-blue-600 text-white border-blue-600'
