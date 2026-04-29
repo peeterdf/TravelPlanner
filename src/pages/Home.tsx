@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload, Sun, Moon, Monitor, Eye, EyeOff, Cloud, CloudUpload, UserPlus, Copy, Check } from 'lucide-react'
 import { useTripsStore } from '../store/tripsStore'
 import { useSettingsStore, useMask } from '../store/settingsStore'
+import { useAuthStore } from '../store/authStore'
 import { Modal } from '../components/ui/Modal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { buildDemoTrip } from '../utils/demoData'
@@ -23,8 +24,12 @@ const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl 
 export function Home() {
   const { trips, loaded, load, addTrip, deleteTrip, importTrip, syncToCloud, joinTrip, claimTraveler } = useTripsStore()
   const { theme, privacyMode, cycleTheme, togglePrivacy } = useSettingsStore()
+  const { user } = useAuthStore()
   const mask = useMask()
   const navigate = useNavigate()
+  // Cloud features only when logged in or not explicitly skipped
+  const skipped = localStorage.getItem('auth-skipped') === '1'
+  const showCloud = cloudEnabled && (!skipped || (!!user && !user.isAnonymous))
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [showNew, setShowNew] = useState(false)
@@ -231,7 +236,7 @@ export function Home() {
                   )}
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  {cloudEnabled && (
+                  {showCloud && (
                     <button
                       onClick={(e) => handleSync(e, trip)}
                       disabled={syncingId === trip.id}
@@ -289,8 +294,8 @@ export function Home() {
         </Link>
       </div>
 
-      {/* FAB: Unirse con código (solo si Firebase está configurado) */}
-      {cloudEnabled && (
+      {/* FAB: Unirse con código (solo si Firebase está configurado y usuario activo) */}
+      {showCloud && (
         <button
           onClick={() => { setShowJoin(true); setJoinCode(''); setJoinError('') }}
           className="fixed bottom-40 right-4 z-30 bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-700 rounded-full w-12 h-12 flex items-center justify-center shadow-md hover:bg-indigo-50 dark:hover:bg-gray-700 active:scale-95 transition-all"
