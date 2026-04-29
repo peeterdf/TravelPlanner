@@ -13,6 +13,8 @@ const FIREBASE_ERRORS: Record<string, string> = {
   'auth/email-already-in-use': 'Ya existe una cuenta con ese email.',
   'auth/too-many-requests': 'Demasiados intentos. Intentá más tarde.',
   'auth/popup-closed-by-user': '',
+  'auth/operation-not-allowed': 'Este método de inicio de sesión no está habilitado. Contactá al administrador.',
+  'auth/network-request-failed': 'Sin conexión. Verificá tu red.',
 }
 
 function friendlyError(err: unknown): string {
@@ -50,6 +52,8 @@ export function AuthModal({ onClose }: AuthModalProps) {
     setError(''); setSuccess('')
     if (!email.trim()) { setError('Ingresá tu email.'); return }
 
+    if (mode !== 'forgot' && !password) { setError('Ingresá tu contraseña.'); return }
+    if (mode === 'register' && password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); return }
     if (mode === 'register' && password !== confirm) {
       setError('Las contraseñas no coinciden.'); return
     }

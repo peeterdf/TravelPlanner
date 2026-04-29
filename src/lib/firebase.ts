@@ -34,7 +34,13 @@ onAuthStateChanged(auth, (user) => {
 
 export async function ensureAuth(): Promise<void> {
   if (auth.currentUser) return
-  await signInAnonymously(auth)
+  try {
+    await signInAnonymously(auth)
+  } catch (err) {
+    // Anonymous auth may not be enabled; other auth methods still work
+    console.warn('Anonymous auth unavailable:', (err as { code?: string }).code)
+    throw err
+  }
 }
 
 export async function signInWithGoogle(): Promise<void> {
