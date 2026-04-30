@@ -116,8 +116,8 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
   unsubscribers.get(trip.id)?.()
   const unsub = subscribeTrip(trip.cloudCode, trip.id, (remote) => {
     const local = get().trips.find(t => t.id === trip.id)
-    // Skip if local data is newer (last-write-wins by updatedAt)
-    if (local?.updatedAt && remote.updatedAt && local.updatedAt > remote.updatedAt) return
+    // Prefer local if it has been edited more recently, or if remote has no timestamp
+    if (local?.updatedAt && (!remote.updatedAt || local.updatedAt > remote.updatedAt)) return
     const migrated = migrateExpenseSplits(remote)
     const merged: Trip = local
       ? {
@@ -156,9 +156,14 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     })
     if (needsSave) saveTrips(trips).catch(console.error)
     set({ trips, loaded: true })
+    const { setStatus, setError } = useSyncStore.getState()
     for (const trip of trips) {
       if (!trip.synced || !trip.cloudCode) continue
       attachListener(trip, get, set)
+      scheduledUpload(trip, (status, msg) => {
+        if (status === 'error') setError(trip.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
+        else setStatus(trip.id, status)
+      })
     }
   },
 
