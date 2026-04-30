@@ -109,7 +109,7 @@ export function Home() {
     setSyncingId(trip.id)
     try {
       await syncToCloud(trip.id)
-      const updated = trips.find(t => t.id === trip.id)
+      const updated = useTripsStore.getState().trips.find(t => t.id === trip.id)
       if (updated?.cloudCode) setSyncCode(updated.cloudCode)
     } catch (err) { alert(`Error al sincronizar:\n${err instanceof Error ? err.message : String(err)}`) }
     finally { setSyncingId(null) }

@@ -114,10 +114,18 @@ function persistLocal(trips: Trip[]) {
 function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<TripsState>) => void) {
   if (!trip.cloudCode) return
   unsubscribers.get(trip.id)?.()
+  const { setStatus, setError } = useSyncStore.getState()
   const unsub = subscribeTrip(trip.cloudCode, trip.id, (remote) => {
     const local = get().trips.find(t => t.id === trip.id)
-    // Prefer local if it has been edited more recently, or if remote has no timestamp
-    if (local?.updatedAt && (!remote.updatedAt || local.updatedAt > remote.updatedAt)) return
+    // Local is newer (or remote has no timestamp): push local data to Firestore
+    // Uses fresh store data at snapshot time, not a stale startup closure
+    if (local?.updatedAt && (!remote.updatedAt || local.updatedAt > remote.updatedAt)) {
+      scheduledUpload(local, (status, msg) => {
+        if (status === 'error') setError(local.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
+        else setStatus(local.id, status)
+      })
+      return
+    }
     const migrated = migrateExpenseSplits(remote)
     const merged: Trip = local
       ? {
@@ -156,14 +164,10 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     })
     if (needsSave) saveTrips(trips).catch(console.error)
     set({ trips, loaded: true })
-    const { setStatus, setError } = useSyncStore.getState()
     for (const trip of trips) {
       if (!trip.synced || !trip.cloudCode) continue
+      // attachListener handles upload when local data is newer than Firestore
       attachListener(trip, get, set)
-      scheduledUpload(trip, (status, msg) => {
-        if (status === 'error') setError(trip.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
-        else setStatus(trip.id, status)
-      })
     }
   },
 
