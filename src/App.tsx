@@ -139,7 +139,11 @@ function TripLayout() {
 
 function AppLoader() {
   const { load } = useTripsStore()
-  useEffect(() => { load() }, [load])
+  const { user, loading } = useAuthStore()
+  useEffect(() => {
+    if (loading) return
+    load()
+  }, [loading, user?.uid])
   return null
 }
 

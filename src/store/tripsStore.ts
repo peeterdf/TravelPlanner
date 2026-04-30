@@ -3,7 +3,7 @@ import type {
   Trip, Transport, Accommodation, ItineraryDay,
   Activity, Expense, AuditEntry, AuditAction
 } from '../types'
-import { loadTrips, saveTrips } from '../utils/storage'
+import { loadTrips, saveTrips, migrateLegacyTrips } from '../utils/storage'
 import { DEFAULT_PACKING_CATEGORIES } from '../utils/validate'
 import { scheduledUpload, uploadTrip as cloudUpload, fetchTrip, subscribeTrip, generateCloudCode, deleteCloudTrip } from '../lib/cloudSync'
 import { useSyncStore } from './syncStore'
@@ -43,6 +43,7 @@ function migrateExpenseSplits(trip: Trip): Trip {
 interface TripsState {
   trips: Trip[]
   loaded: boolean
+  loadedUid: string | null
   load: () => Promise<void>
   addTrip: (name: string, startDate: string, endDate: string, travelers: string[], currency: string) => string
   importTrip: (trip: Trip) => void
@@ -97,7 +98,8 @@ interface TripsState {
 const unsubscribers = new Map<string, () => void>()
 
 function persist(trips: Trip[]) {
-  saveTrips(trips).catch(console.error)
+  const uid = auth.currentUser?.uid ?? null
+  saveTrips(trips, uid).catch(console.error)
   const { setStatus, setError } = useSyncStore.getState()
   for (const t of trips) {
     if (!t.synced || !t.cloudCode) continue
@@ -109,7 +111,8 @@ function persist(trips: Trip[]) {
 }
 
 function persistLocal(trips: Trip[]) {
-  saveTrips(trips).catch(console.error)
+  const uid = auth.currentUser?.uid ?? null
+  saveTrips(trips, uid).catch(console.error)
 }
 
 function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<TripsState>) => void) {
@@ -158,21 +161,33 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
 export const useTripsStore = create<TripsState>((set, get) => ({
   trips: [],
   loaded: false,
+  loadedUid: null,
 
   load: async () => {
-    if (get().loaded) return
-    let trips = await loadTrips()
+    const uid = auth.currentUser?.uid ?? null
+    if (get().loaded && get().loadedUid === uid) return
+
+    // Detach listeners from previous session
+    for (const unsub of unsubscribers.values()) unsub()
+    unsubscribers.clear()
+
+    let trips = await loadTrips(uid)
+
+    // Migración: si el usuario tiene UID pero no tiene viajes propios, buscar en key legacy
+    if (!trips.length && uid) {
+      trips = await migrateLegacyTrips(uid)
+    }
+
     let needsSave = false
     trips = trips.map(t => {
       if (!t.expenseSplits?.length) return t
       needsSave = true
       return migrateExpenseSplits(t)
     })
-    if (needsSave) saveTrips(trips).catch(console.error)
-    set({ trips, loaded: true })
+    if (needsSave) saveTrips(trips, uid).catch(console.error)
+    set({ trips, loaded: true, loadedUid: uid })
     for (const trip of trips) {
       if (!trip.synced || !trip.cloudCode) continue
-      // attachListener handles upload when local data is newer than Firestore
       attachListener(trip, get, set)
     }
   },
