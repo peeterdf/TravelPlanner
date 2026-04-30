@@ -115,6 +115,7 @@ export interface Trip {
   synced?: boolean
   cloudCode?: string
   ownerUid?: string
+  updatedAt?: string
 }
 
 export interface ItineraryConflict {

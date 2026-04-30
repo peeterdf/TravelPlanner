@@ -18,7 +18,7 @@ function mkAudit(action: AuditAction, section: string, description: string): Aud
 }
 
 function withAudit(trip: Trip, entry: AuditEntry): Trip {
-  return { ...trip, auditLog: [...(trip.auditLog ?? []), entry].slice(-300) }
+  return { ...trip, updatedAt: new Date().toISOString(), auditLog: [...(trip.auditLog ?? []), entry].slice(-300) }
 }
 
 function migrateExpenseSplits(trip: Trip): Trip {
@@ -95,27 +95,14 @@ interface TripsState {
 
 const unsubscribers = new Map<string, () => void>()
 
-// Tracks trips that have local changes not yet confirmed by Firestore.
-// While set, onSnapshot callbacks are blocked to prevent Firestore from
-// overwriting uncommitted local edits.
-const localModifiedAt = new Map<string, number>()
-
 function persist(trips: Trip[]) {
   saveTrips(trips).catch(console.error)
-  const now = Date.now()
   const { setStatus, setError } = useSyncStore.getState()
   for (const t of trips) {
     if (!t.synced || !t.cloudCode) continue
-    localModifiedAt.set(t.id, now)
     scheduledUpload(t, (status, msg) => {
-      if (status === 'synced') {
-        localModifiedAt.delete(t.id)
-        setStatus(t.id, 'synced')
-      } else if (status === 'error') {
-        setError(t.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
-      } else {
-        setStatus(t.id, status)
-      }
+      if (status === 'error') setError(t.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
+      else setStatus(t.id, status)
     })
   }
 }
@@ -128,9 +115,9 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
   if (!trip.cloudCode) return
   unsubscribers.get(trip.id)?.()
   const unsub = subscribeTrip(trip.cloudCode, trip.id, (remote) => {
-    // Skip if we have local changes not yet confirmed by Firestore
-    if (localModifiedAt.has(trip.id)) return
     const local = get().trips.find(t => t.id === trip.id)
+    // Skip if local data is newer (last-write-wins by updatedAt)
+    if (local?.updatedAt && remote.updatedAt && local.updatedAt > remote.updatedAt) return
     const migrated = migrateExpenseSplits(remote)
     const merged: Trip = local
       ? {
@@ -169,22 +156,9 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     })
     if (needsSave) saveTrips(trips).catch(console.error)
     set({ trips, loaded: true })
-    const { setStatus, setError } = useSyncStore.getState()
     for (const trip of trips) {
       if (!trip.synced || !trip.cloudCode) continue
-      // Block Firestore from overwriting local data until the startup upload confirms
-      localModifiedAt.set(trip.id, Date.now())
       attachListener(trip, get, set)
-      scheduledUpload(trip, (status, msg) => {
-        if (status === 'synced') {
-          localModifiedAt.delete(trip.id)
-          setStatus(trip.id, 'synced')
-        } else if (status === 'error') {
-          // Unblock after 30s so collaborative updates can eventually flow through
-          setTimeout(() => localModifiedAt.delete(trip.id), 30_000)
-          setError(trip.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
-        }
-      })
     }
   },
 
@@ -196,6 +170,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       startDate,
       endDate,
       currency,
+      updatedAt: new Date().toISOString(),
       travelers: travelers.map(n => ({ id: genId(), name: n })),
       transports: [],
       accommodations: [],
@@ -235,13 +210,13 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   },
 
   updateTrip: (id, partial) => {
-    const trips = get().trips.map(t => t.id === id ? { ...t, ...partial } : t)
+    const trips = get().trips.map(t => t.id === id ? { ...t, ...partial, updatedAt: new Date().toISOString() } : t)
     persist(trips)
     set({ trips })
   },
 
   setNotes: (tripId, notes) => {
-    const trips = get().trips.map(t => t.id === tripId ? { ...t, notes } : t)
+    const trips = get().trips.map(t => t.id === tripId ? { ...t, notes, updatedAt: new Date().toISOString() } : t)
     persist(trips)
     set({ trips })
   },
@@ -469,7 +444,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   addPackingCategory: (tripId, name) => {
     const trips = get().trips.map(t => {
       if (t.id !== tripId) return t
-      return { ...t, packingList: [...t.packingList, { id: genId(), name, items: [] }] }
+      return { ...t, updatedAt: new Date().toISOString(), packingList: [...t.packingList, { id: genId(), name, items: [] }] }
     })
     persist(trips)
     set({ trips })
@@ -478,7 +453,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
   deletePackingCategory: (tripId, categoryId) => {
     const trips = get().trips.map(t => {
       if (t.id !== tripId) return t
-      return { ...t, packingList: t.packingList.filter(c => c.id !== categoryId) }
+      return { ...t, updatedAt: new Date().toISOString(), packingList: t.packingList.filter(c => c.id !== categoryId) }
     })
     persist(trips)
     set({ trips })
@@ -504,7 +479,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     if (!uid) return
     const trips = get().trips.map(t => {
       if (t.id !== tripId) return t
-      return { ...t, travelers: t.travelers.map(v => v.id === travelerId ? { ...v, userId: uid } : v) }
+      return { ...t, updatedAt: new Date().toISOString(), travelers: t.travelers.map(v => v.id === travelerId ? { ...v, userId: uid } : v) }
     })
     persist(trips)
     set({ trips })
@@ -519,6 +494,7 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       ...trip,
       synced: true,
       cloudCode,
+      updatedAt: trip.updatedAt ?? new Date().toISOString(),
       ...(ownerUid ? { ownerUid } : {}),
     }
     await cloudUpload(synced)

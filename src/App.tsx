@@ -161,6 +161,13 @@ function AppRoutes() {
   const { user, loading } = useAuthStore()
   const [skipped, setSkipped] = useState(() => localStorage.getItem('auth-skipped') === '1')
 
+  useEffect(() => {
+    if (user && !user.isAnonymous) {
+      localStorage.removeItem('auth-skipped')
+      setSkipped(false)
+    }
+  }, [user])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-blue-600">
