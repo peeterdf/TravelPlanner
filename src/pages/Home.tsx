@@ -109,9 +109,13 @@ export function Home() {
     const toast = useToastStore.getState().add
     const u = auth.currentUser
     toast(`🔍 Auth actual: uid=${u?.uid?.slice(0, 8) ?? 'null'} anon=${u?.isAnonymous ?? '-'} email=${u?.email ?? 'ninguno'}`)
-    const pid = import.meta.env.VITE_FIREBASE_PROJECT_ID || '❌vacío'
+    toast(`API_KEY: ${import.meta.env.VITE_FIREBASE_API_KEY || '❌vacío'}`)
+    toast(`AUTH_DOMAIN: ${import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '❌vacío'}`)
+    toast(`PROJECT_ID: ${import.meta.env.VITE_FIREBASE_PROJECT_ID || '❌vacío'}`)
+    toast(`APP_ID: ${import.meta.env.VITE_FIREBASE_APP_ID || '❌vacío'}`)
+    const pid = import.meta.env.VITE_FIREBASE_PROJECT_ID || ''
     const looksWrong = pid.startsWith('1:') || pid.includes(':web:')
-    toast(`🔍 Config: apiKey=${import.meta.env.VITE_FIREBASE_API_KEY ? '✅' : '❌'} projectId=${pid}${looksWrong ? ' ⚠️ PARECE APP_ID, NO PROJECT_ID' : ''}`)
+    if (looksWrong) toast('⚠️ PROJECT_ID parece ser el APP_ID — debería ser algo como "travelplanner-c78cd"')
     try {
       toast('⏳ Llamando ensureAuth…')
       await ensureAuth()
