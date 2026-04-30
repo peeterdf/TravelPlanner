@@ -4,6 +4,7 @@ import { Share2, Sun, Moon, Monitor, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useTripsStore } from './store/tripsStore'
 import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
+import { loadOrCreateProfile } from './lib/userProfile'
 import { Home } from './pages/Home'
 import { WelcomeScreen } from './pages/WelcomeScreen'
 import { TripDashboard } from './pages/trip/TripDashboard'
@@ -159,15 +160,18 @@ function ThemeApplier() {
 }
 
 function AppRoutes() {
-  const { user, loading } = useAuthStore()
+  const { user, loading, setRole } = useAuthStore()
   const [skipped, setSkipped] = useState(() => localStorage.getItem('auth-skipped') === '1')
 
   useEffect(() => {
     if (user && !user.isAnonymous) {
       localStorage.removeItem('auth-skipped')
       setSkipped(false)
+      loadOrCreateProfile(user.uid, user.email).then(setRole).catch(console.error)
+    } else {
+      setRole(null)
     }
-  }, [user])
+  }, [user?.uid, user?.isAnonymous])
 
   if (loading) {
     return (

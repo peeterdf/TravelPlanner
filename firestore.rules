@@ -2,14 +2,22 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /trips/{cloudCode} {
-      // Cualquier usuario autenticado puede leer y crear
       allow read, create: if request.auth != null;
-      // Cualquier usuario autenticado puede actualizar (colaboración)
       allow update: if request.auth != null;
-      // Solo el dueño puede borrar
       allow delete: if request.auth != null
         && request.auth.uid == resource.data.ownerUid;
     }
+
+    match /users/{uid} {
+      // Users can only read their own profile
+      allow read: if request.auth != null && request.auth.uid == uid;
+      // New profiles can only be created with role='user' (role upgrades via Firebase Console)
+      allow create: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.role == 'user';
+      allow update, delete: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

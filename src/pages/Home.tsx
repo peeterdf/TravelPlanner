@@ -26,7 +26,7 @@ const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl 
 export function Home() {
   const { trips, loaded, load, addTrip, deleteTrip, importTrip, syncToCloud, joinTrip, claimTraveler } = useTripsStore()
   const { theme, privacyMode, cycleTheme, togglePrivacy } = useSettingsStore()
-  const { user } = useAuthStore()
+  const { user, role } = useAuthStore()
   const mask = useMask()
   const navigate = useNavigate()
   // Cloud features only when logged in or not explicitly skipped
@@ -329,8 +329,8 @@ export function Home() {
         </Link>
       </div>
 
-      {/* FAB: Test conexión Firebase (debug temporal) */}
-      {showCloud && (
+      {/* FAB: Test conexión Firebase (solo admin) */}
+      {showCloud && role === 'admin' && (
         <button
           onClick={handleTestConnection}
           className="fixed bottom-56 right-4 z-30 bg-yellow-400 text-yellow-900 rounded-full w-12 h-12 flex items-center justify-center shadow-md hover:bg-yellow-300 active:scale-95 transition-all text-xs font-bold"
