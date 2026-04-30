@@ -1,6 +1,9 @@
 import { doc, setDoc, getDoc, deleteDoc, onSnapshot } from 'firebase/firestore'
 import { db, cloudEnabled, ensureAuth } from './firebase'
 import type { Trip } from '../types'
+import { useToastStore } from '../store/toastStore'
+
+function dbg(msg: string) { useToastStore.getState().add(msg) }
 
 export { cloudEnabled }
 
@@ -27,7 +30,10 @@ export function scheduledUpload(
   trip: Trip,
   onStatus: (s: 'syncing' | 'synced' | 'error', msg?: string) => void,
 ): void {
-  if (!db || !trip.cloudCode) return
+  if (!db || !trip.cloudCode) {
+    dbg(`⚠️ scheduledUpload skip: db=${!!db} cloudCode=${!!trip.cloudCode}`)
+    return
+  }
   const code = trip.cloudCode
   const state = uploadState.get(code)
   if (state) clearTimeout(state.timer)
@@ -35,19 +41,24 @@ export function scheduledUpload(
   const lastUpload = state?.lastUpload ?? 0
   const elapsed = Date.now() - lastUpload
   const delay = Math.max(DEBOUNCE_MS, MIN_INTERVAL_MS - elapsed)
+  dbg(`⏱ scheduledUpload scheduled: ${trip.name} delay=${delay}ms`)
 
   const timer = setTimeout(async () => {
     uploadState.set(code, { timer, lastUpload: Date.now() })
     onStatus('syncing')
+    dbg(`⏳ Upload timer fired: ${trip.name}`)
     try {
       await ensureAuth()
+      dbg(`🔑 ensureAuth OK uid=${(await import('./firebase')).auth.currentUser?.uid?.slice(0,8) ?? 'null'}`)
       await setDoc(doc(db!, 'trips', code), toFirestore(trip))
+      dbg(`✅ setDoc OK: ${trip.name}`)
       onStatus('synced')
     } catch (err) {
       console.error('Cloud sync error:', err)
       const errCode = (err as { code?: string }).code ?? 'unknown'
       const errMsg = (err as { message?: string }).message ?? String(err)
       const msg = `[${errCode}] ${errMsg}`
+      dbg(`❌ setDoc FAILED: ${msg}`)
       onStatus('error', msg)
     }
   }, delay)

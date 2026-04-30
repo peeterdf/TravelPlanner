@@ -92,6 +92,7 @@ interface TripsState {
   // Cloud sync
   syncToCloud: (tripId: string) => Promise<void>
   joinTrip: (code: string) => Promise<string | null>
+  debugSync: (tripId: string) => Promise<void>
 }
 
 const unsubscribers = new Map<string, () => void>()
@@ -99,17 +100,26 @@ const unsubscribers = new Map<string, () => void>()
 function persist(trips: Trip[]) {
   saveTrips(trips).catch(console.error)
   const { setStatus, setError } = useSyncStore.getState()
+  const toast = useToastStore.getState().add
+  let syncCount = 0
   for (const t of trips) {
     if (!t.synced || !t.cloudCode) continue
+    syncCount++
     scheduledUpload(t, (status, msg) => {
       if (status === 'error') {
         const detail = msg ?? 'Error desconocido'
         setError(t.id, detail)
-        useToastStore.getState().add(`Sync error (${t.name}): ${detail}`)
+        toast(`❌ Sync error (${t.name}): ${detail}`)
+      } else if (status === 'synced') {
+        setStatus(t.id, status)
+        toast(`✅ Synced: ${t.name}`)
       } else {
         setStatus(t.id, status)
       }
     })
+  }
+  if (syncCount === 0 && trips.some(t => t.synced)) {
+    toast(`⚠️ persist: ${trips.filter(t => t.synced).length} trip(s) tienen synced=true pero sin cloudCode`)
   }
 }
 
@@ -522,6 +532,26 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     saveTrips(trips).catch(console.error)
     set({ trips })
     attachListener(synced, get, set)
+  },
+
+  debugSync: async (tripId) => {
+    const toast = useToastStore.getState().add
+    const trip = get().trips.find(t => t.id === tripId)
+    if (!trip) { toast('❌ debugSync: trip not found'); return }
+    toast(`🔍 Trip: synced=${trip.synced} cloudCode=${trip.cloudCode?.slice(0,8) ?? 'none'} updatedAt=${trip.updatedAt?.slice(11,19) ?? 'none'}`)
+    const { auth } = await import('../lib/firebase')
+    const u = auth.currentUser
+    toast(`🔍 Auth: uid=${u?.uid?.slice(0,8) ?? 'null'} anon=${u?.isAnonymous ?? 'N/A'} email=${u?.email ?? 'none'}`)
+    if (!trip.synced || !trip.cloudCode) { toast('❌ Trip no tiene cloudCode/synced — presioná el botón de nube primero'); return }
+    toast('⏳ Llamando uploadTrip directamente…')
+    try {
+      await cloudUpload(trip)
+      toast('✅ uploadTrip OK — Firestore aceptó la escritura')
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? 'unknown'
+      const msg = (err as { message?: string }).message ?? String(err)
+      toast(`❌ uploadTrip FAILED: [${code}] ${msg}`)
+    }
   },
 
   joinTrip: async (code) => {
