@@ -11,9 +11,9 @@ import { cloudEnabled } from '../lib/cloudSync'
 import { DateInput } from '../components/ui/DateInput'
 import { UserMenu } from '../components/ui/UserMenu'
 import { ClaimTravelerModal } from '../components/ui/ClaimTravelerModal'
-import { auth, ensureAuth } from '../lib/firebase'
+import { auth, ensureAuth, db } from '../lib/firebase'
+import { doc, setDoc, deleteDoc } from 'firebase/firestore'
 import { useToastStore } from '../store/toastStore'
-import { uploadTrip } from '../lib/cloudSync'
 import type { Traveler } from '../types'
 
 function formatDate(d: string) {
@@ -109,7 +109,9 @@ export function Home() {
     const toast = useToastStore.getState().add
     const u = auth.currentUser
     toast(`🔍 Auth actual: uid=${u?.uid?.slice(0, 8) ?? 'null'} anon=${u?.isAnonymous ?? '-'} email=${u?.email ?? 'ninguno'}`)
-    toast(`🔍 Config: apiKey=${import.meta.env.VITE_FIREBASE_API_KEY ? '✅' : '❌vacío'} projectId=${import.meta.env.VITE_FIREBASE_PROJECT_ID || '❌vacío'}`)
+    const pid = import.meta.env.VITE_FIREBASE_PROJECT_ID || '❌vacío'
+    const looksWrong = pid.startsWith('1:') || pid.includes(':web:')
+    toast(`🔍 Config: apiKey=${import.meta.env.VITE_FIREBASE_API_KEY ? '✅' : '❌'} projectId=${pid}${looksWrong ? ' ⚠️ PARECE APP_ID, NO PROJECT_ID' : ''}`)
     try {
       toast('⏳ Llamando ensureAuth…')
       await ensureAuth()
@@ -120,17 +122,15 @@ export function Home() {
       return
     }
     try {
-      toast('⏳ Probando escritura en Firestore…')
-      const syncedTrip = trips.find(t => t.synced && t.cloudCode)
-      if (syncedTrip) {
-        await uploadTrip(syncedTrip)
-        toast(`✅ Escritura Firestore OK (viaje: ${syncedTrip.name})`)
-      } else {
-        toast('ℹ️ No hay viajes sincronizados — no se puede probar escritura Firestore aún')
-      }
+      toast('⏳ Probando escritura directa en Firestore (trips/_debug_test)…')
+      const testRef = doc(db, 'trips', '_debug_test_delete_me')
+      await setDoc(testRef, { t: Date.now(), uid: auth.currentUser?.uid ?? 'anon' })
+      await deleteDoc(testRef)
+      toast('✅ Firestore escritura+borrado OK — Firestore funciona correctamente')
     } catch (err) {
       const code = (err as { code?: string }).code ?? 'unknown'
-      toast(`❌ Escritura Firestore FALLÓ: [${code}] ${(err as Error).message}`)
+      const msg = (err as Error).message ?? String(err)
+      toast(`❌ Firestore FALLÓ: [${code}] ${msg}`)
     }
   }
 
