@@ -7,6 +7,7 @@ import { loadTrips, saveTrips } from '../utils/storage'
 import { DEFAULT_PACKING_CATEGORIES } from '../utils/validate'
 import { scheduledUpload, uploadTrip as cloudUpload, fetchTrip, subscribeTrip, generateCloudCode, deleteCloudTrip } from '../lib/cloudSync'
 import { useSyncStore } from './syncStore'
+import { useToastStore } from './toastStore'
 import { auth } from '../lib/firebase'
 
 function genId(): string {
@@ -101,8 +102,13 @@ function persist(trips: Trip[]) {
   for (const t of trips) {
     if (!t.synced || !t.cloudCode) continue
     scheduledUpload(t, (status, msg) => {
-      if (status === 'error') setError(t.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
-      else setStatus(t.id, status)
+      if (status === 'error') {
+        const detail = msg ?? 'Error desconocido'
+        setError(t.id, detail)
+        useToastStore.getState().add(`Sync error (${t.name}): ${detail}`)
+      } else {
+        setStatus(t.id, status)
+      }
     })
   }
 }
@@ -121,8 +127,13 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
     // Uses fresh store data at snapshot time, not a stale startup closure
     if (local?.updatedAt && (!remote.updatedAt || local.updatedAt > remote.updatedAt)) {
       scheduledUpload(local, (status, msg) => {
-        if (status === 'error') setError(local.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
-        else setStatus(local.id, status)
+        if (status === 'error') {
+          const detail = msg ?? 'Error desconocido'
+          setError(local.id, detail)
+          useToastStore.getState().add(`Sync error (${local.name}): ${detail}`)
+        } else {
+          setStatus(local.id, status)
+        }
       })
       return
     }

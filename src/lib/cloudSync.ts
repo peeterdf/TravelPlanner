@@ -45,10 +45,9 @@ export function scheduledUpload(
       onStatus('synced')
     } catch (err) {
       console.error('Cloud sync error:', err)
-      const code2 = (err as { code?: string }).code
-      const msg = code2 === 'permission-denied'
-        ? 'Sin permisos en Firestore. Desplegá las Security Rules en Firebase Console.'
-        : 'Error al sincronizar. Revisá tu conexión.'
+      const errCode = (err as { code?: string }).code ?? 'unknown'
+      const errMsg = (err as { message?: string }).message ?? String(err)
+      const msg = `[${errCode}] ${errMsg}`
       onStatus('error', msg)
     }
   }, delay)

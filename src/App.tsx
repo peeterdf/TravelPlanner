@@ -20,6 +20,7 @@ import { Header } from './components/layout/Header'
 import { BottomNav } from './components/layout/BottomNav'
 import { SyncDot } from './components/ui/SyncDot'
 import { UserMenu } from './components/ui/UserMenu'
+import { Toasts } from './components/ui/Toasts'
 import { Privacy } from './pages/Privacy'
 import type { Trip } from './types'
 
@@ -204,6 +205,7 @@ export default function App() {
       <ThemeApplier />
       <AppLoader />
       <AppRoutes />
+      <Toasts />
     </BrowserRouter>
   )
 }
