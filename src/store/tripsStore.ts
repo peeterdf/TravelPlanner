@@ -95,14 +95,27 @@ interface TripsState {
 
 const unsubscribers = new Map<string, () => void>()
 
+// Tracks trips that have local changes not yet confirmed by Firestore.
+// While set, onSnapshot callbacks are blocked to prevent Firestore from
+// overwriting uncommitted local edits.
+const localModifiedAt = new Map<string, number>()
+
 function persist(trips: Trip[]) {
   saveTrips(trips).catch(console.error)
+  const now = Date.now()
   const { setStatus, setError } = useSyncStore.getState()
   for (const t of trips) {
     if (!t.synced || !t.cloudCode) continue
+    localModifiedAt.set(t.id, now)
     scheduledUpload(t, (status, msg) => {
-      if (status === 'error') setError(t.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
-      else setStatus(t.id, status)
+      if (status === 'synced') {
+        localModifiedAt.delete(t.id)
+        setStatus(t.id, 'synced')
+      } else if (status === 'error') {
+        setError(t.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
+      } else {
+        setStatus(t.id, status)
+      }
     })
   }
 }
@@ -115,6 +128,8 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
   if (!trip.cloudCode) return
   unsubscribers.get(trip.id)?.()
   const unsub = subscribeTrip(trip.cloudCode, trip.id, (remote) => {
+    // Skip if we have local changes not yet confirmed by Firestore
+    if (localModifiedAt.has(trip.id)) return
     const local = get().trips.find(t => t.id === trip.id)
     const migrated = migrateExpenseSplits(remote)
     const merged: Trip = local
@@ -154,8 +169,22 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     })
     if (needsSave) saveTrips(trips).catch(console.error)
     set({ trips, loaded: true })
+    const { setStatus, setError } = useSyncStore.getState()
     for (const trip of trips) {
-      if (trip.synced && trip.cloudCode) attachListener(trip, get, set)
+      if (!trip.synced || !trip.cloudCode) continue
+      // Block Firestore from overwriting local data until the startup upload confirms
+      localModifiedAt.set(trip.id, Date.now())
+      attachListener(trip, get, set)
+      scheduledUpload(trip, (status, msg) => {
+        if (status === 'synced') {
+          localModifiedAt.delete(trip.id)
+          setStatus(trip.id, 'synced')
+        } else if (status === 'error') {
+          // Unblock after 30s so collaborative updates can eventually flow through
+          setTimeout(() => localModifiedAt.delete(trip.id), 30_000)
+          setError(trip.id, msg ?? 'Error al sincronizar. Revisá tu conexión.')
+        }
+      })
     }
   },
 
