@@ -7,13 +7,29 @@ import {
 } from 'firebase/auth'
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
 import { useAuthStore } from '../store/authStore'
+import { useToastStore } from '../store/toastStore'
 
-const app = initializeApp({
+const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
-})
+}
+
+// Show diagnostic immediately if any config key is missing
+const missingKeys = (Object.keys(firebaseConfig) as (keyof typeof firebaseConfig)[])
+  .filter(k => !firebaseConfig[k])
+if (missingKeys.length > 0) {
+  // Defer so the toast store is ready
+  setTimeout(() => {
+    useToastStore.getState().add(
+      `⚠️ Firebase config incompleto. Faltan: ${missingKeys.join(', ')}. ` +
+      `Revisá los GitHub Secrets del repo (Settings → Secrets → Actions).`
+    )
+  }, 500)
+}
+
+const app = initializeApp(firebaseConfig)
 
 if (import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
   initializeAppCheck(app, {
@@ -37,13 +53,17 @@ const authReadyPromise = new Promise<void>(resolve => {
 })
 
 export async function ensureAuth(): Promise<void> {
-  // Wait for Firebase to restore the persisted session before deciding
-  if (!authResolved) await authReadyPromise
+  if (!authResolved) {
+    // Never hang forever — if Firebase doesn't respond in 10 s, something is wrong
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Firebase auth timeout — revisá la configuración del proyecto (API key, authDomain, projectId).')), 10_000)
+    )
+    await Promise.race([authReadyPromise, timeout])
+  }
   if (auth.currentUser) return
   try {
     await signInAnonymously(auth)
   } catch (err) {
-    // Anonymous auth may not be enabled; other auth methods still work
     console.warn('Anonymous auth unavailable:', (err as { code?: string }).code)
     throw err
   }

@@ -11,7 +11,9 @@ import { cloudEnabled } from '../lib/cloudSync'
 import { DateInput } from '../components/ui/DateInput'
 import { UserMenu } from '../components/ui/UserMenu'
 import { ClaimTravelerModal } from '../components/ui/ClaimTravelerModal'
-import { auth } from '../lib/firebase'
+import { auth, ensureAuth } from '../lib/firebase'
+import { useToastStore } from '../store/toastStore'
+import { uploadTrip } from '../lib/cloudSync'
 import type { Traveler } from '../types'
 
 function formatDate(d: string) {
@@ -101,6 +103,35 @@ export function Home() {
     if (already) { navigate(`/viaje/demo-europa-2024/dashboard`); return }
     importTrip(buildDemoTrip())
     navigate('/viaje/demo-europa-2024/dashboard')
+  }
+
+  const handleTestConnection = async () => {
+    const toast = useToastStore.getState().add
+    const u = auth.currentUser
+    toast(`🔍 Auth actual: uid=${u?.uid?.slice(0, 8) ?? 'null'} anon=${u?.isAnonymous ?? '-'} email=${u?.email ?? 'ninguno'}`)
+    toast(`🔍 Config: apiKey=${import.meta.env.VITE_FIREBASE_API_KEY ? '✅' : '❌vacío'} projectId=${import.meta.env.VITE_FIREBASE_PROJECT_ID || '❌vacío'}`)
+    try {
+      toast('⏳ Llamando ensureAuth…')
+      await ensureAuth()
+      const u2 = auth.currentUser
+      toast(`✅ ensureAuth OK — uid=${u2?.uid?.slice(0, 8) ?? 'null'} anon=${u2?.isAnonymous}`)
+    } catch (err) {
+      toast(`❌ ensureAuth FALLÓ: ${(err as Error).message}`)
+      return
+    }
+    try {
+      toast('⏳ Probando escritura en Firestore…')
+      const syncedTrip = trips.find(t => t.synced && t.cloudCode)
+      if (syncedTrip) {
+        await uploadTrip(syncedTrip)
+        toast(`✅ Escritura Firestore OK (viaje: ${syncedTrip.name})`)
+      } else {
+        toast('ℹ️ No hay viajes sincronizados — no se puede probar escritura Firestore aún')
+      }
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? 'unknown'
+      toast(`❌ Escritura Firestore FALLÓ: [${code}] ${(err as Error).message}`)
+    }
   }
 
   const handleSync = async (e: React.MouseEvent, trip: { id: string; cloudCode?: string }) => {
@@ -293,6 +324,18 @@ export function Home() {
           Política de privacidad
         </Link>
       </div>
+
+      {/* FAB: Test conexión Firebase (debug temporal) */}
+      {showCloud && (
+        <button
+          onClick={handleTestConnection}
+          className="fixed bottom-56 right-4 z-30 bg-yellow-400 text-yellow-900 rounded-full w-12 h-12 flex items-center justify-center shadow-md hover:bg-yellow-300 active:scale-95 transition-all text-xs font-bold"
+          aria-label="Test Firebase"
+          title="Test conexión Firebase"
+        >
+          DBG
+        </button>
+      )}
 
       {/* FAB: Unirse con código (solo si Firebase está configurado y usuario activo) */}
       {showCloud && (
