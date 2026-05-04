@@ -9,13 +9,15 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      // Users can only read their own profile
       allow read: if request.auth != null && request.auth.uid == uid;
-      // New profiles can only be created with role='user' (role upgrades via Firebase Console)
       allow create: if request.auth != null
         && request.auth.uid == uid
         && request.resource.data.role == 'user';
       allow update, delete: if false;
+
+      match /trips/{cloudCode} {
+        allow read, write: if request.auth != null && request.auth.uid == uid;
+      }
     }
 
     match /{document=**} {

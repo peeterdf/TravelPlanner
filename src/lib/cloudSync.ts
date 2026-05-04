@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, deleteDoc, onSnapshot } from 'firebase/firestore'
+import { doc, setDoc, getDoc, deleteDoc, onSnapshot, collection, getDocs } from 'firebase/firestore'
 import { db, cloudEnabled, ensureAuth } from './firebase'
 import type { Trip } from '../types'
 
@@ -71,6 +71,25 @@ export async function deleteCloudTrip(cloudCode: string): Promise<void> {
   if (!db || !cloudCode) return
   await ensureAuth()
   await deleteDoc(doc(db, 'trips', cloudCode))
+}
+
+export async function addUserTripRef(uid: string, cloudCode: string, name: string, isOwner: boolean): Promise<void> {
+  if (!db) return
+  await ensureAuth()
+  await setDoc(doc(db, 'users', uid, 'trips', cloudCode), { name, isOwner, joinedAt: new Date().toISOString() })
+}
+
+export async function removeUserTripRef(uid: string, cloudCode: string): Promise<void> {
+  if (!db || !cloudCode) return
+  await ensureAuth()
+  await deleteDoc(doc(db, 'users', uid, 'trips', cloudCode))
+}
+
+export async function loadUserTripRefs(uid: string): Promise<Array<{ cloudCode: string; name: string; isOwner: boolean }>> {
+  if (!db) return []
+  await ensureAuth()
+  const snap = await getDocs(collection(db, 'users', uid, 'trips'))
+  return snap.docs.map(d => ({ cloudCode: d.id, ...(d.data() as { name: string; isOwner: boolean }) }))
 }
 
 export function subscribeTrip(cloudCode: string, _tripId: string, onUpdate: (trip: Trip) => void): () => void {

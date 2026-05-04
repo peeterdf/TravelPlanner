@@ -24,7 +24,7 @@ function formatDate(d: string) {
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
 
 export function Home() {
-  const { trips, loaded, load, addTrip, deleteTrip, importTrip, syncToCloud, joinTrip, claimTraveler } = useTripsStore()
+  const { trips, loaded, load, addTrip, deleteTrip, leaveTrip, importTrip, syncToCloud, joinTrip, claimTraveler } = useTripsStore()
   const { theme, privacyMode, cycleTheme, togglePrivacy } = useSettingsStore()
   const { user, role } = useAuthStore()
   const mask = useMask()
@@ -52,6 +52,8 @@ export function Home() {
 
   const [claimCtx, setClaimCtx] = useState<{ tripId: string; travelers: Traveler[] } | null>(null)
   const [dateError, setDateError] = useState('')
+  const [nameError, setNameError] = useState('')
+  const [leaveConfirm, setLeaveConfirm] = useState<{ id: string; name: string; isOwner: boolean } | null>(null)
 
   useEffect(() => { load() }, [load])
 
@@ -59,6 +61,10 @@ export function Home() {
     if (!name.trim()) return
     if (startDate && endDate && endDate < startDate) { setDateError('La fecha de vuelta no puede ser antes que la de salida.'); return }
     setDateError('')
+    if (trips.some(t => t.name.trim().toLowerCase() === name.trim().toLowerCase())) {
+      setNameError('Ya tenés un viaje con ese nombre.'); return
+    }
+    setNameError('')
     const seen = new Set<string>()
     const travelerNames = travelersRaw.split(',').map(s => s.trim()).filter(s => {
       if (!s) return false
@@ -77,9 +83,14 @@ export function Home() {
     }
   }
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = (e: React.MouseEvent, trip: { id: string; name: string; synced?: boolean; ownerUid?: string }) => {
     e.stopPropagation()
-    if (confirm('¿Eliminar este viaje y todos sus datos?')) deleteTrip(id)
+    if (trip.synced) {
+      const isOwner = !trip.ownerUid || trip.ownerUid === auth.currentUser?.uid
+      setLeaveConfirm({ id: trip.id, name: trip.name, isOwner })
+    } else {
+      if (confirm('¿Eliminar este viaje y todos sus datos?')) deleteTrip(trip.id)
+    }
   }
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -282,7 +293,7 @@ export function Home() {
                     </button>
                   )}
                   <button
-                    onClick={(e) => handleDelete(e, trip.id)}
+                    onClick={(e) => handleDelete(e, trip)}
                     className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                     aria-label="Eliminar viaje"
                   >
@@ -376,7 +387,8 @@ export function Home() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del viaje *</label>
-              <input className={inputCls} placeholder="Ej: Europa 2024" value={name} onChange={e => setName(e.target.value)} autoFocus />
+              <input className={inputCls} placeholder="Ej: Europa 2024" value={name} onChange={e => { setName(e.target.value); setNameError('') }} autoFocus />
+              {nameError && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{nameError}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -433,6 +445,44 @@ export function Home() {
               </button>
             </div>
             {copied && <p className="text-xs text-green-600 dark:text-green-400 text-center">¡Copiado!</p>}
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Salir / Eliminar viaje sincronizado */}
+      {leaveConfirm && (
+        <Modal
+          title={leaveConfirm.isOwner ? 'Salir o eliminar viaje' : 'Salir del viaje'}
+          onClose={() => setLeaveConfirm(null)}
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {leaveConfirm.isOwner
+                ? 'Podés salir del viaje (seguirá existiendo para los demás) o eliminarlo para todos.'
+                : 'Al salir, el viaje se quitará de tu lista. Los demás integrantes seguirán viéndolo.'}
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => { leaveTrip(leaveConfirm.id); setLeaveConfirm(null) }}
+                className="w-full border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl py-3 font-semibold text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Salir del viaje
+              </button>
+              {leaveConfirm.isOwner && (
+                <button
+                  onClick={() => { deleteTrip(leaveConfirm.id); setLeaveConfirm(null) }}
+                  className="w-full bg-red-600 text-white rounded-xl py-3 font-semibold text-sm hover:bg-red-700 transition-colors"
+                >
+                  Eliminar para todos
+                </button>
+              )}
+              <button
+                onClick={() => setLeaveConfirm(null)}
+                className="w-full text-gray-400 dark:text-gray-500 py-2 text-sm hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         </Modal>
       )}

@@ -5,7 +5,7 @@ import type {
 } from '../types'
 import { loadTrips, saveTrips, migrateLegacyTrips } from '../utils/storage'
 import { DEFAULT_PACKING_CATEGORIES } from '../utils/validate'
-import { scheduledUpload, uploadTrip as cloudUpload, fetchTrip, subscribeTrip, generateCloudCode, deleteCloudTrip } from '../lib/cloudSync'
+import { scheduledUpload, uploadTrip as cloudUpload, fetchTrip, subscribeTrip, generateCloudCode, deleteCloudTrip, addUserTripRef, removeUserTripRef, loadUserTripRefs } from '../lib/cloudSync'
 import { useSyncStore } from './syncStore'
 import { useToastStore } from './toastStore'
 import { auth } from '../lib/firebase'
@@ -93,6 +93,7 @@ interface TripsState {
   // Cloud sync
   syncToCloud: (tripId: string) => Promise<void>
   joinTrip: (code: string) => Promise<string | null>
+  leaveTrip: (id: string) => void
 }
 
 const unsubscribers = new Map<string, () => void>()
@@ -153,7 +154,7 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
         }
       : migrated
     set({ trips: get().trips.map(t => t.id === trip.id ? merged : t) })
-    saveTrips(get().trips).catch(console.error)
+    saveTrips(get().trips, auth.currentUser?.uid ?? null).catch(console.error)
   })
   unsubscribers.set(trip.id, unsub)
 }
@@ -185,6 +186,21 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       return migrateExpenseSplits(t)
     })
     if (needsSave) saveTrips(trips, uid).catch(console.error)
+
+    // Restore synced trips from user's Firestore membership index (cross-device)
+    if (uid && !auth.currentUser?.isAnonymous) {
+      const refs = await loadUserTripRefs(uid).catch(() => [])
+      let added = false
+      for (const ref of refs) {
+        if (trips.some(t => t.cloudCode === ref.cloudCode)) continue
+        const remote = await fetchTrip(ref.cloudCode).catch(() => null)
+        if (!remote) continue
+        trips = [...trips, { ...migrateExpenseSplits(remote), synced: true as const, cloudCode: ref.cloudCode }]
+        added = true
+      }
+      if (added) saveTrips(trips, uid).catch(console.error)
+    }
+
     set({ trips, loaded: true, loadedUid: uid })
     for (const trip of trips) {
       if (!trip.synced || !trip.cloudCode) continue
@@ -230,10 +246,12 @@ export const useTripsStore = create<TripsState>((set, get) => ({
 
   deleteTrip: (id) => {
     const trip = get().trips.find(t => t.id === id)
-    const isOwner = !trip?.ownerUid || trip.ownerUid === auth.currentUser?.uid
+    const uid = auth.currentUser?.uid ?? null
+    const isOwner = !trip?.ownerUid || trip.ownerUid === uid
     if (trip?.synced && trip.cloudCode && isOwner) {
       deleteCloudTrip(trip.cloudCode).catch(console.error)
     }
+    if (uid && trip?.cloudCode) removeUserTripRef(uid, trip.cloudCode).catch(console.error)
     const trips = get().trips.filter(t => t.id !== id)
     persist(trips)
     set({ trips })
@@ -529,9 +547,10 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     }
     await cloudUpload(synced)
     const trips = get().trips.map(t => t.id === tripId ? synced : t)
-    saveTrips(trips).catch(console.error)
+    persistLocal(trips)
     set({ trips })
     attachListener(synced, get, set)
+    if (ownerUid) addUserTripRef(ownerUid, cloudCode, synced.name, true).catch(console.error)
   },
 
   joinTrip: async (code) => {
@@ -541,9 +560,22 @@ export const useTripsStore = create<TripsState>((set, get) => ({
     const trips = get().trips.some(t => t.id === base.id)
       ? get().trips.map(t => t.id === base.id ? base : t)
       : [...get().trips, base]
-    saveTrips(trips).catch(console.error)
+    persistLocal(trips)
     set({ trips })
     attachListener(base, get, set)
+    const uid = auth.currentUser?.uid
+    if (uid) addUserTripRef(uid, base.cloudCode, base.name, false).catch(console.error)
     return base.id
+  },
+
+  leaveTrip: (id) => {
+    const trip = get().trips.find(t => t.id === id)
+    unsubscribers.get(id)?.()
+    unsubscribers.delete(id)
+    const trips = get().trips.filter(t => t.id !== id)
+    persistLocal(trips)
+    set({ trips })
+    const uid = auth.currentUser?.uid
+    if (uid && trip?.cloudCode) removeUserTripRef(uid, trip.cloudCode).catch(console.error)
   },
 }))
