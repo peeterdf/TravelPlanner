@@ -59,7 +59,8 @@ export function Home() {
 
   const handleCreate = () => {
     if (!name.trim()) return
-    if (startDate && endDate && endDate < startDate) { setDateError('La fecha de vuelta no puede ser antes que la de salida.'); return }
+    if (!endDate) { setDateError('La fecha de vuelta es obligatoria.'); return }
+    if (startDate && endDate < startDate) { setDateError('La fecha de vuelta no puede ser antes que la de salida.'); return }
     setDateError('')
     if (trips.some(t => t.name.trim().toLowerCase() === name.trim().toLowerCase())) {
       setNameError('Ya tenés un viaje con ese nombre.'); return
