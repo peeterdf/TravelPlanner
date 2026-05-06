@@ -42,6 +42,10 @@ export function Transports() {
 
   const handleSave = () => {
     if (!form.origin.trim() || !form.destination.trim()) return
+    if (form.arrivalDate && !form.departureDate) {
+      setFormError('Ingresá la fecha de salida antes de agregar la llegada.')
+      return
+    }
     if (form.departureDate && form.arrivalDate && form.arrivalDate < form.departureDate) {
       setFormError('La llegada no puede ser antes que la salida.')
       return

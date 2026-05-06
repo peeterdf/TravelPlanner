@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Plus, Trash2, CheckSquare } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
+import { Modal } from '../../components/ui/Modal'
 
 export function Packing() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -11,6 +12,7 @@ export function Packing() {
   const [newItem, setNewItem] = useState<Record<string, string>>({})
   const [openCat, setOpenCat] = useState<string | null>(null)
   const [newCat, setNewCat] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState<{ catId: string; catName: string; itemCount: number } | null>(null)
 
   if (!trip) return null
 
@@ -32,9 +34,19 @@ export function Packing() {
   }
 
   const handleDeleteCat = (catId: string, catName: string, itemCount: number) => {
-    if (itemCount > 0 && !confirm(`¿Eliminar "${catName}" con ${itemCount} ítem${itemCount !== 1 ? 's' : ''}?`)) return
-    deletePackingCategory(tripId!, catId)
-    if (openCat === catId) setOpenCat(null)
+    if (itemCount === 0) {
+      deletePackingCategory(tripId!, catId)
+      if (openCat === catId) setOpenCat(null)
+    } else {
+      setDeleteConfirm({ catId, catName, itemCount })
+    }
+  }
+
+  const confirmDeleteCat = () => {
+    if (!deleteConfirm) return
+    deletePackingCategory(tripId!, deleteConfirm.catId)
+    if (openCat === deleteConfirm.catId) setOpenCat(null)
+    setDeleteConfirm(null)
   }
 
   return (
@@ -163,6 +175,28 @@ export function Packing() {
           <Plus size={18} />
         </button>
       </div>
+
+      {deleteConfirm && (
+        <Modal title="Eliminar categoría" onClose={() => setDeleteConfirm(null)}>
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-5">
+            ¿Eliminar <span className="font-semibold">"{deleteConfirm.catName}"</span> y sus <span className="font-semibold">{deleteConfirm.itemCount} ítem{deleteConfirm.itemCount !== 1 ? 's' : ''}</span>? Esta acción no se puede deshacer.
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="flex-1 border border-gray-300 dark:border-gray-600 rounded-xl py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmDeleteCat}
+              className="flex-1 bg-red-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-red-700 transition-colors"
+            >
+              Eliminar
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

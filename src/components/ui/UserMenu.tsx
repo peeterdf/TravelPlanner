@@ -3,6 +3,7 @@ import { LogIn, LogOut, User, Loader2, X } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { signOutUser } from '../../lib/firebase'
 import { AuthModal } from './AuthModal'
+import { useToastStore } from '../../store/toastStore'
 
 interface UserMenuProps {
   variant?: 'light' | 'dark'
@@ -10,6 +11,7 @@ interface UserMenuProps {
 
 export function UserMenu({ variant = 'dark' }: UserMenuProps) {
   const { user, loading } = useAuthStore()
+  const toast = useToastStore()
   const [busy, setBusy] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const [showPanel, setShowPanel] = useState(false)
@@ -18,7 +20,8 @@ export function UserMenu({ variant = 'dark' }: UserMenuProps) {
 
   const handleSignOut = async () => {
     setBusy(true)
-    try { await signOutUser(); setShowPanel(false) } catch { /* ignore */ }
+    try { await signOutUser(); setShowPanel(false) }
+    catch { toast.add('No se pudo cerrar sesión. Intentá de nuevo.') }
     finally { setBusy(false) }
   }
 
@@ -42,7 +45,7 @@ export function UserMenu({ variant = 'dark' }: UserMenuProps) {
     <>
       <button onClick={() => setShowPanel(true)} title={user.displayName ?? 'Mi cuenta'} className="p-1">
         {user.photoURL
-          ? <img src={user.photoURL} alt="avatar" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" />
+          ? <img src={user.photoURL} alt="avatar" className="w-7 h-7 rounded-full" referrerPolicy="no-referrer" /* required for Google profile photos */ />
           : <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center"><User size={14} className="text-white" /></div>
         }
       </button>

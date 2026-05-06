@@ -2,13 +2,10 @@ import { useParams } from 'react-router-dom'
 import { useTripsStore } from '../../store/tripsStore'
 import type { AuditAction } from '../../types'
 
+const auditDateFmt = new Intl.DateTimeFormat('es', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
+
 function formatAuditDate(iso: string): string {
-  const d = new Date(iso)
-  const dd = String(d.getDate()).padStart(2, '0')
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const hh = String(d.getHours()).padStart(2, '0')
-  const min = String(d.getMinutes()).padStart(2, '0')
-  return `${dd}/${mm} ${hh}:${min}`
+  return auditDateFmt.format(new Date(iso)).replace(',', '')
 }
 
 const ACTION_LABEL: Record<AuditAction, string> = {

@@ -41,6 +41,7 @@ export function TripDashboard() {
 
   const [showTravelers, setShowTravelers] = useState(false)
   const [newName, setNewName] = useState('')
+  const [dupError, setDupError] = useState('')
   const [removeError, setRemoveError] = useState<Record<string, string>>({})
 
   const [showEdit, setShowEdit] = useState(false)
@@ -139,7 +140,11 @@ export function TripDashboard() {
   const handleAdd = () => {
     const name = newName.trim()
     if (!name) return
-    if (trip.travelers.some(t => t.name.toLowerCase() === name.toLowerCase())) return
+    if (trip.travelers.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+      setDupError(`"${name}" ya está en el viaje.`)
+      return
+    }
+    setDupError('')
     addTraveler(tripId!, name)
     setNewName('')
   }
@@ -300,7 +305,7 @@ export function TripDashboard() {
                   className="flex-1 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white"
                   placeholder="Nombre"
                   value={newName}
-                  onChange={e => setNewName(e.target.value)}
+                  onChange={e => { setNewName(e.target.value); setDupError('') }}
                   onKeyDown={e => { if (e.key === 'Enter') handleAdd() }}
                 />
                 <button
@@ -311,6 +316,7 @@ export function TripDashboard() {
                   <UserPlus size={18} />
                 </button>
               </div>
+              {dupError && <p className="text-xs text-red-500 mt-1">{dupError}</p>}
             </div>
           </div>
         </Modal>

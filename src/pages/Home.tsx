@@ -105,10 +105,10 @@ export function Home() {
     reader.onload = (ev) => {
       try {
         const trip = JSON.parse(ev.target?.result as string)
-        if (!trip?.id || !trip?.name) { alert('Archivo inválido'); return }
+        if (!trip?.id || !trip?.name) { useToastStore.getState().add('Archivo inválido'); return }
         importTrip(trip)
         navigate(`/viaje/${trip.id}/dashboard`)
-      } catch { alert('No se pudo leer el archivo') }
+      } catch { useToastStore.getState().add('No se pudo leer el archivo') }
     }
     reader.readAsText(file)
     e.target.value = ''
@@ -176,7 +176,7 @@ export function Home() {
       await syncToCloud(trip.id)
       const updated = useTripsStore.getState().trips.find(t => t.id === trip.id)
       if (updated?.cloudCode) setSyncCode(updated.cloudCode)
-    } catch (err) { alert(`Error al sincronizar:\n${err instanceof Error ? err.message : String(err)}`) }
+    } catch (err) { useToastStore.getState().add(`Error al sincronizar: ${err instanceof Error ? err.message : String(err)}`) }
     finally { setSyncingId(null) }
   }
 

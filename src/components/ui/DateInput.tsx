@@ -53,7 +53,7 @@ export function DateInput({ value, onChange, className }: Props) {
       <button
         type="button"
         tabIndex={-1}
-        onClick={() => pickerRef.current?.showPicker()}
+        onClick={() => { try { pickerRef.current?.showPicker() } catch { /* unsupported browser */ } }}
         className="absolute right-2 text-gray-400 hover:text-blue-500 transition-colors"
         aria-label="Abrir calendario"
       >

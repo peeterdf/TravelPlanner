@@ -72,9 +72,13 @@ export function Expenses() {
   if (!trip) return null
 
   const sorted = [...trip.expenses].sort((a, b) => a.date.localeCompare(b.date))
-  const totalPrice = sorted.reduce((s, e) => s + e.price, 0)
-  const totalPaid = sorted.reduce((s, e) => s + e.paid, 0)
-  const remaining = totalPrice - totalPaid
+  const byCurrency = sorted.reduce<Record<string, { price: number; paid: number }>>((acc, e) => {
+    const c = e.currency ?? currency
+    const prev = acc[c] ?? { price: 0, paid: 0 }
+    acc[c] = { price: prev.price + e.price, paid: prev.paid + e.paid }
+    return acc
+  }, {})
+  const currencyTotals = Object.entries(byCurrency).map(([c, { price, paid }]) => ({ currency: c, price, paid, remaining: price - paid }))
 
   const splitExpenses = sorted.filter(e => e.paidBy)
   const currency = trip.currency ?? 'USD'
@@ -141,21 +145,25 @@ export function Expenses() {
     <div className="flex flex-col pb-28">
       {/* Summary bar — only on gastos tab */}
       {tab === 'gastos' && sorted.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-3 grid grid-cols-3 text-center">
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
-            <p className="font-bold text-gray-900 dark:text-white text-sm">{sorted[0]?.currency} {mask.amount2(totalPrice)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Pagado</p>
-            <p className="font-bold text-green-600 dark:text-green-400 text-sm">{sorted[0]?.currency} {mask.amount2(totalPaid)}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Pendiente</p>
-            <p className={`font-bold text-sm ${remaining > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-              {sorted[0]?.currency} {mask.amount2(remaining)}
-            </p>
-          </div>
+        <div className="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 px-4 py-2 divide-y divide-gray-50 dark:divide-gray-700">
+          {currencyTotals.map(ct => (
+            <div key={ct.currency} className="grid grid-cols-3 text-center py-1.5">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
+                <p className="font-bold text-gray-900 dark:text-white text-sm">{ct.currency} {mask.amount2(ct.price)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Pagado</p>
+                <p className="font-bold text-green-600 dark:text-green-400 text-sm">{ct.currency} {mask.amount2(ct.paid)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Pendiente</p>
+                <p className={`font-bold text-sm ${ct.remaining > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                  {ct.currency} {mask.amount2(ct.remaining)}
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

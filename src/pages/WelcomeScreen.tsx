@@ -52,6 +52,7 @@ export function WelcomeScreen({ onSkip }: WelcomeScreenProps) {
         >
           Omitir — usar sin cuenta (solo local)
         </button>
+        <p className="text-center text-blue-300 text-xs">Tus viajes se guardarán solo en este dispositivo.</p>
       </div>
 
       {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
