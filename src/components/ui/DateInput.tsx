@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { CalendarDays } from 'lucide-react'
 
 function autoFmt(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 8)
@@ -28,24 +29,43 @@ interface Props {
 
 export function DateInput({ value, onChange, className }: Props) {
   const [display, setDisplay] = useState(() => fromISO(value))
+  const pickerRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setDisplay(fromISO(value))
   }, [value])
 
   return (
-    <input
-      type="text"
-      inputMode="numeric"
-      placeholder="DD/MM/AAAA"
-      className={className}
-      value={display}
-      onChange={e => {
-        const fmt = autoFmt(e.target.value)
-        setDisplay(fmt)
-        const iso = toISO(fmt)
-        onChange(iso || (fmt === '' ? '' : value))
-      }}
-    />
+    <div className="relative flex items-center">
+      <input
+        type="text"
+        inputMode="numeric"
+        placeholder="DD/MM/AAAA"
+        className={`${className ?? ''} pr-9`}
+        value={display}
+        onChange={e => {
+          const fmt = autoFmt(e.target.value)
+          setDisplay(fmt)
+          const iso = toISO(fmt)
+          onChange(iso || (fmt === '' ? '' : value))
+        }}
+      />
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={() => pickerRef.current?.showPicker()}
+        className="absolute right-2 text-gray-400 hover:text-blue-500 transition-colors"
+        aria-label="Abrir calendario"
+      >
+        <CalendarDays size={16} />
+      </button>
+      <input
+        ref={pickerRef}
+        type="date"
+        className="sr-only"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+      />
+    </div>
   )
 }

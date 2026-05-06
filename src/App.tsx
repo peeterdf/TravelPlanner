@@ -58,7 +58,7 @@ const SECTION_TITLES: Record<string, string> = {
   mas: 'Más',
 }
 
-const BOTTOM_NAV_SECTIONS = new Set(['transportes', 'itinerario', 'alojamiento', 'gastos', 'mas'])
+const BOTTOM_NAV_SECTIONS = new Set(['dashboard', 'transportes', 'itinerario', 'alojamiento', 'gastos', 'mas'])
 
 function TripLayout() {
   const location = useLocation()
