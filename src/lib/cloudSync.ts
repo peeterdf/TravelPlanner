@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, deleteDoc, onSnapshot, collection, getDocs } from 'firebase/firestore'
+import { doc, setDoc, getDoc, deleteDoc, onSnapshot, collection, getDocs, query, where } from 'firebase/firestore'
 import { db, cloudEnabled, ensureAuth } from './firebase'
 import type { Trip } from '../types'
 
@@ -90,6 +90,36 @@ export async function loadUserTripRefs(uid: string): Promise<Array<{ cloudCode: 
   await ensureAuth()
   const snap = await getDocs(collection(db, 'users', uid, 'trips'))
   return snap.docs.map(d => ({ cloudCode: d.id, ...(d.data() as { name: string; isOwner: boolean }) }))
+}
+
+export async function fetchTripsByOwner(uid: string): Promise<Trip[]> {
+  if (!db) return []
+  await ensureAuth()
+  const snap = await getDocs(query(collection(db, 'trips'), where('ownerUid', '==', uid)))
+  return snap.docs.map(d => d.data() as Trip)
+}
+
+export async function findUserByEmail(email: string): Promise<{ uid: string } | null> {
+  if (!db) return null
+  await ensureAuth()
+  const snap = await getDocs(query(collection(db, 'users'), where('email', '==', email)))
+  if (snap.empty) return null
+  return { uid: snap.docs[0].id }
+}
+
+export async function backfillMembership(targetUid: string, trips: Trip[]): Promise<number> {
+  if (!db) return 0
+  await ensureAuth()
+  let count = 0
+  for (const trip of trips) {
+    if (!trip.cloudCode) continue
+    await setDoc(
+      doc(db, 'users', targetUid, 'trips', trip.cloudCode),
+      { name: trip.name, isOwner: true, joinedAt: new Date().toISOString() }
+    )
+    count++
+  }
+  return count
 }
 
 export function subscribeTrip(cloudCode: string, _tripId: string, onUpdate: (trip: Trip) => void): () => void {

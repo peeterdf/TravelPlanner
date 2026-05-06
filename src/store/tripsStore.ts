@@ -5,7 +5,7 @@ import type {
 } from '../types'
 import { loadTrips, saveTrips, migrateLegacyTrips } from '../utils/storage'
 import { DEFAULT_PACKING_CATEGORIES } from '../utils/validate'
-import { scheduledUpload, uploadTrip as cloudUpload, fetchTrip, subscribeTrip, generateCloudCode, deleteCloudTrip, addUserTripRef, removeUserTripRef, loadUserTripRefs } from '../lib/cloudSync'
+import { scheduledUpload, uploadTrip as cloudUpload, fetchTrip, subscribeTrip, generateCloudCode, deleteCloudTrip, addUserTripRef, removeUserTripRef, loadUserTripRefs, fetchTripsByOwner } from '../lib/cloudSync'
 import { useSyncStore } from './syncStore'
 import { useToastStore } from './toastStore'
 import { auth } from '../lib/firebase'
@@ -200,15 +200,21 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       }
       if (added) saveTrips(trips, uid).catch(console.error)
 
-      // Backfill membership for pre-existing synced trips (runs once per user)
-      const backfillKey = `membership_backfilled_${uid}`
-      if (!localStorage.getItem(backfillKey)) {
-        for (const trip of trips) {
-          if (!trip.synced || !trip.cloudCode) continue
-          const isOwner = !trip.ownerUid || trip.ownerUid === uid
-          addUserTripRef(uid, trip.cloudCode, trip.name, isOwner).catch(console.error)
+      // Recuperar viajes propios no registrados en el índice (una vez por sesión)
+      const sessionKey = `owner_sync_${uid}`
+      if (!sessionStorage.getItem(sessionKey)) {
+        sessionStorage.setItem(sessionKey, '1')
+        const ownedTrips = await fetchTripsByOwner(uid).catch(() => [])
+        const knownCodes = new Set(refs.map(r => r.cloudCode))
+        for (const remote of ownedTrips) {
+          if (!remote.cloudCode) continue
+          if (!knownCodes.has(remote.cloudCode))
+            addUserTripRef(uid, remote.cloudCode, remote.name, true).catch(console.error)
+          if (!trips.some(t => t.cloudCode === remote.cloudCode)) {
+            trips = [...trips, { ...migrateExpenseSplits(remote), synced: true as const, cloudCode: remote.cloudCode }]
+            added = true
+          }
         }
-        localStorage.setItem(backfillKey, '1')
       }
     }
 

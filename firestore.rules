@@ -1,6 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     match /trips/{cloudCode} {
       allow read, create: if request.auth != null;
       allow update: if request.auth != null;
@@ -9,14 +15,15 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if request.auth != null && request.auth.uid == uid;
+      allow get: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
       allow create: if request.auth != null
         && request.auth.uid == uid
         && request.resource.data.role == 'user';
       allow update, delete: if false;
 
       match /trips/{cloudCode} {
-        allow read, write: if request.auth != null && request.auth.uid == uid;
+        allow read, write: if request.auth != null && (request.auth.uid == uid || isAdmin());
       }
     }
 

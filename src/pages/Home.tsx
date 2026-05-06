@@ -7,7 +7,7 @@ import { useAuthStore } from '../store/authStore'
 import { Modal } from '../components/ui/Modal'
 import { EmptyState } from '../components/ui/EmptyState'
 import { buildDemoTrip } from '../utils/demoData'
-import { cloudEnabled } from '../lib/cloudSync'
+import { cloudEnabled, findUserByEmail, fetchTripsByOwner, backfillMembership } from '../lib/cloudSync'
 import { DateInput } from '../components/ui/DateInput'
 import { UserMenu } from '../components/ui/UserMenu'
 import { ClaimTravelerModal } from '../components/ui/ClaimTravelerModal'
@@ -54,6 +54,10 @@ export function Home() {
   const [dateError, setDateError] = useState('')
   const [nameError, setNameError] = useState('')
   const [leaveConfirm, setLeaveConfirm] = useState<{ id: string; name: string; isOwner: boolean } | null>(null)
+  const [showBackfill, setShowBackfill] = useState(false)
+  const [backfillEmail, setBackfillEmail] = useState('')
+  const [backfillResult, setBackfillResult] = useState<string | null>(null)
+  const [backfilling, setBackfilling] = useState(false)
 
   useEffect(() => { load() }, [load])
 
@@ -115,6 +119,20 @@ export function Home() {
     if (already) { navigate(`/viaje/demo-europa-2024/dashboard`); return }
     importTrip(buildDemoTrip())
     navigate('/viaje/demo-europa-2024/dashboard')
+  }
+
+  const handleBackfill = async () => {
+    setBackfilling(true); setBackfillResult(null)
+    try {
+      const found = await findUserByEmail(backfillEmail.trim())
+      if (!found) { setBackfillResult('No se encontró ninguna cuenta con ese email.'); return }
+      const trips = await fetchTripsByOwner(found.uid)
+      if (!trips.length) { setBackfillResult('No se encontraron viajes para ese usuario.'); return }
+      const count = await backfillMembership(found.uid, trips)
+      setBackfillResult(`✅ ${count} viaje(s) asignados a ${backfillEmail.trim()}`)
+    } catch (err) {
+      setBackfillResult(`❌ ${(err as Error).message}`)
+    } finally { setBackfilling(false) }
   }
 
   const handleTestConnection = async () => {
@@ -341,6 +359,18 @@ export function Home() {
         </Link>
       </div>
 
+      {/* FAB: Backfill membresías (solo admin) */}
+      {showCloud && role === 'admin' && (
+        <button
+          onClick={() => { setShowBackfill(true); setBackfillResult(null); setBackfillEmail('') }}
+          className="fixed bottom-72 right-4 z-30 bg-orange-400 text-orange-900 rounded-full w-12 h-12 flex items-center justify-center shadow-md hover:bg-orange-300 active:scale-95 transition-all text-lg"
+          aria-label="Asignar viajes a usuario"
+          title="Asignar viajes a usuario"
+        >
+          🔧
+        </button>
+      )}
+
       {/* FAB: Test conexión Firebase (solo admin) */}
       {showCloud && role === 'admin' && (
         <button
@@ -484,6 +514,36 @@ export function Home() {
                 Cancelar
               </button>
             </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Modal: Backfill membresías (admin) */}
+      {showBackfill && (
+        <Modal title="Asignar viajes a usuario" onClose={() => setShowBackfill(false)}>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Ingresá el email de la cuenta. Se buscarán todos los viajes donde esa cuenta es owner y se registrarán en su índice de membresías.
+            </p>
+            <input
+              className={inputCls}
+              type="email"
+              placeholder="email@ejemplo.com"
+              value={backfillEmail}
+              onChange={e => { setBackfillEmail(e.target.value); setBackfillResult(null) }}
+              onKeyDown={e => { if (e.key === 'Enter') handleBackfill() }}
+              autoFocus
+            />
+            {backfillResult && (
+              <p className="text-sm font-mono break-all text-gray-700 dark:text-gray-300">{backfillResult}</p>
+            )}
+            <button
+              onClick={handleBackfill}
+              disabled={!backfillEmail.trim() || backfilling}
+              className="w-full bg-orange-500 text-white rounded-xl py-3 font-semibold text-sm hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {backfilling ? 'Buscando...' : 'Asignar viajes'}
+            </button>
           </div>
         </Modal>
       )}
