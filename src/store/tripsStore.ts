@@ -199,6 +199,17 @@ export const useTripsStore = create<TripsState>((set, get) => ({
         added = true
       }
       if (added) saveTrips(trips, uid).catch(console.error)
+
+      // Backfill membership for pre-existing synced trips (runs once per user)
+      const backfillKey = `membership_backfilled_${uid}`
+      if (!localStorage.getItem(backfillKey)) {
+        for (const trip of trips) {
+          if (!trip.synced || !trip.cloudCode) continue
+          const isOwner = !trip.ownerUid || trip.ownerUid === uid
+          addUserTripRef(uid, trip.cloudCode, trip.name, isOwner).catch(console.error)
+        }
+        localStorage.setItem(backfillKey, '1')
+      }
     }
 
     set({ trips, loaded: true, loadedUid: uid })
