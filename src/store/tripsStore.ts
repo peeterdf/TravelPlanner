@@ -15,7 +15,8 @@ function genId(): string {
 }
 
 function mkAudit(action: AuditAction, section: string, description: string): AuditEntry {
-  return { id: genId(), timestamp: new Date().toISOString(), action, section, description }
+  const authorId = auth.currentUser?.uid
+  return { id: genId(), timestamp: new Date().toISOString(), action, section, description, ...(authorId ? { authorId } : {}) }
 }
 
 function withAudit(trip: Trip, entry: AuditEntry): Trip {

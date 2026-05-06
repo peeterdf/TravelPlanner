@@ -42,21 +42,29 @@ export function Audit() {
   return (
     <div className="p-4 pb-28">
       <ul className="space-y-1">
-        {auditLog.map(entry => (
-          <li key={entry.id} className="flex items-start gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
-            <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${DOT_COLOR[entry.action]}`} />
-            <div className="flex-1 min-w-0">
-              <span className="text-sm text-gray-800 dark:text-gray-200">
-                Se {ACTION_LABEL[entry.action]}{' '}
-                <span className="font-medium">{entry.section}</span>:{' '}
-                {entry.description}
+        {auditLog.map(entry => {
+          const author = entry.authorId
+            ? trip.travelers.find(v => v.userId === entry.authorId)
+            : null
+          return (
+            <li key={entry.id} className="flex items-start gap-3 py-2.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+              <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${DOT_COLOR[entry.action]}`} />
+              <div className="flex-1 min-w-0">
+                {author && (
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400 mr-1">{author.name}</span>
+                )}
+                <span className="text-sm text-gray-800 dark:text-gray-200">
+                  {ACTION_LABEL[entry.action]}{' '}
+                  <span className="font-medium">{entry.section}</span>:{' '}
+                  {entry.description}
+                </span>
+              </div>
+              <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5">
+                {formatAuditDate(entry.timestamp)}
               </span>
-            </div>
-            <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 mt-0.5">
-              {formatAuditDate(entry.timestamp)}
-            </span>
-          </li>
-        ))}
+            </li>
+          )
+        })}
       </ul>
     </div>
   )

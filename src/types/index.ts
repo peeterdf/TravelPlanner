@@ -94,6 +94,7 @@ export interface AuditEntry {
   action: AuditAction
   section: string
   description: string
+  authorId?: string
 }
 
 export interface Trip {
