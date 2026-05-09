@@ -18,9 +18,9 @@ const DAY_COLORS = [
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
-const LEFT_BORDER_COLORS = [
-  'border-l-blue-400', 'border-l-green-400', 'border-l-orange-400',
-  'border-l-purple-400', 'border-l-yellow-400', 'border-l-pink-400', 'border-l-red-400',
+const LEFT_STRIP_COLORS = [
+  'bg-blue-400', 'bg-green-400', 'bg-orange-400',
+  'bg-purple-400', 'bg-yellow-400', 'bg-pink-400', 'bg-red-400',
 ]
 
 const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
@@ -156,14 +156,16 @@ export function Itinerary() {
             const data = dayMap.get(dateStr)
             const hasConflict = conflictDates.has(dateStr)
             const cityIdx = data?.city ? cityColorMap.get(data.city) : undefined
-            const borderColor = cityIdx !== undefined ? LEFT_BORDER_COLORS[cityIdx] : 'border-l-gray-200 dark:border-l-gray-600'
+            const stripColor = cityIdx !== undefined ? LEFT_STRIP_COLORS[cityIdx] : 'bg-gray-200 dark:bg-gray-600'
             const dayName = DAY_NAMES[(day.getDay() + 6) % 7]
             return (
               <button
                 key={dateStr}
                 onClick={() => openEdit(dateStr)}
-                className={`w-full flex items-start gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 border-l-4 ${borderColor} rounded-xl p-3 text-left shadow-sm active:scale-[0.99] transition-transform ${hasConflict ? 'ring-1 ring-red-300' : ''}`}
+                className={`w-full flex overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-left shadow-sm active:scale-[0.99] transition-transform ${hasConflict ? 'ring-1 ring-red-300' : ''}`}
               >
+                <div className={`w-1.5 flex-shrink-0 ${stripColor}`} />
+                <div className="flex items-start gap-3 p-3 flex-1 min-w-0">
                 <div className="flex-shrink-0 w-9 text-center">
                   <p className="text-xs text-gray-400 dark:text-gray-500 leading-none">{dayName}</p>
                   <p className="text-xl font-bold text-gray-800 dark:text-white leading-tight">{format(day, 'd')}</p>
@@ -185,6 +187,7 @@ export function Itinerary() {
                   )}
                 </div>
                 <ChevronRight size={16} className="flex-shrink-0 text-gray-300 dark:text-gray-600 mt-1.5" />
+                </div>
               </button>
             )
           })}
