@@ -5,7 +5,11 @@ import { useTripsStore } from '../../store/tripsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { DateInput } from '../../components/ui/DateInput'
+import { MoneyInput } from '../../components/ui/MoneyInput'
 import type { Accommodation } from '../../types'
+
+const CURRENCIES = ['USD', 'EUR', 'ARS', 'GBP', 'BRL', 'CLP', 'MXN', 'COP']
+const EMPTY_COST = { price: 0, currency: 'USD', paid: 0, fullPay: true, paidBy: '' }
 
 const fmtDate = (d: string) => d ? d.split('-').reverse().join('/') : ''
 
@@ -19,17 +23,30 @@ const labelCls = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-
 export function Accommodations() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
-  const { trips, addAccommodation, updateAccommodation, deleteAccommodation } = useTripsStore()
+  const { trips, addAccommodation, updateAccommodation, deleteAccommodation, addExpense } = useTripsStore()
   const trip = trips.find(t => t.id === tripId)
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
   const [form, setForm] = useState<Omit<Accommodation, 'id'>>(EMPTY)
   const [editId, setEditId] = useState<string | null>(null)
   const [showPin, setShowPin] = useState<Record<string, boolean>>({})
+  const [showCost, setShowCost] = useState(false)
+  const [costForm, setCostForm] = useState(EMPTY_COST)
 
   if (!trip) return null
 
-  const openAdd = () => { setForm(EMPTY); setModal('add') }
-  const openEdit = (a: Accommodation) => { setForm({ ...a }); setEditId(a.id); setModal('edit') }
+  const openAdd = () => {
+    setForm(EMPTY)
+    setShowCost(false)
+    setCostForm({ ...EMPTY_COST, currency: trip.currency ?? 'USD' })
+    setModal('add')
+  }
+  const openEdit = (a: Accommodation) => {
+    setForm({ ...a })
+    setEditId(a.id)
+    setShowCost(false)
+    setCostForm({ ...EMPTY_COST, currency: trip.currency ?? 'USD' })
+    setModal('edit')
+  }
 
   const handleSave = () => {
     if (!form.city.trim()) return
@@ -45,6 +62,20 @@ export function Accommodations() {
     }
     if (modal === 'add') addAccommodation(tripId!, data)
     else if (modal === 'edit' && editId) updateAccommodation(tripId!, { ...data, id: editId })
+    if (modal === 'add' && showCost && costForm.price > 0) {
+      addExpense(tripId!, {
+        concept: `Alojamiento ${data.city}`,
+        category: 'alojamiento',
+        date: data.checkInDate,
+        detail: data.confirmationCode,
+        price: costForm.price,
+        paid: costForm.fullPay ? costForm.price : costForm.paid,
+        currency: costForm.currency,
+        reserved: true,
+        paidBy: costForm.paidBy,
+        includedTravelers: [],
+      })
+    }
     setModal(null)
   }
 
@@ -117,6 +148,7 @@ export function Accommodations() {
                     concept: `Alojamiento ${a.city}`,
                     date: a.checkInDate || '',
                     detail: a.confirmationCode || '',
+                    category: 'alojamiento',
                   }}})}
                   className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
                   title="Agregar a gastos"
@@ -198,6 +230,60 @@ export function Accommodations() {
               <label className={labelCls}>Link de reserva</label>
               <input type="url" className={inputCls} placeholder="https://www.booking.com/..." value={form.url} onChange={e => f('url', e.target.value)} />
             </div>
+            {modal === 'add' && (
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" checked={showCost} onChange={e => setShowCost(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Registrar costo</span>
+                </label>
+                {showCost && (
+                  <div className="mt-3 space-y-3">
+                    <div className="grid grid-cols-[1fr,auto] gap-2 items-end">
+                      <div>
+                        <label className={labelCls}>Precio total</label>
+                        <MoneyInput value={costForm.price} onChange={v => setCostForm(p => ({ ...p, price: v }))} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Moneda</label>
+                        <select className={inputCls} value={costForm.currency}
+                          onChange={e => setCostForm(p => ({ ...p, currency: e.target.value }))}>
+                          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className={labelCls}>Pago</label>
+                      <div className="flex gap-4">
+                        {([{ v: true, label: 'Total' }, { v: false, label: 'Parcial' }] as const).map(({ v, label }) => (
+                          <label key={label} className="flex items-center gap-1.5 text-sm cursor-pointer">
+                            <input type="radio" checked={costForm.fullPay === v}
+                              onChange={() => setCostForm(p => ({ ...p, fullPay: v }))} />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    {!costForm.fullPay && (
+                      <div>
+                        <label className={labelCls}>Monto pagado</label>
+                        <MoneyInput value={costForm.paid} onChange={v => setCostForm(p => ({ ...p, paid: v }))} />
+                      </div>
+                    )}
+                    {trip.travelers.length > 0 && (
+                      <div>
+                        <label className={labelCls}>Pagó</label>
+                        <select className={inputCls} value={costForm.paidBy}
+                          onChange={e => setCostForm(p => ({ ...p, paidBy: e.target.value }))}>
+                          <option value="">Sin asignar</option>
+                          {trip.travelers.map(tv => <option key={tv.id} value={tv.name}>{tv.name}</option>)}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <button onClick={handleSave} disabled={!form.city}
               className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold text-sm hover:bg-blue-700 disabled:opacity-40 transition-colors">
               {modal === 'add' ? 'Agregar' : 'Guardar cambios'}
