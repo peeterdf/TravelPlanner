@@ -4,7 +4,7 @@ import { useTripsStore } from '../../store/tripsStore'
 import { validateItinerary } from '../../utils/validate'
 import { Modal } from '../../components/ui/Modal'
 import { format, eachDayOfInterval, startOfWeek, parseISO, addDays } from 'date-fns'
-import { Calendar, AlertTriangle, Moon } from 'lucide-react'
+import { Calendar, AlertTriangle, Moon, ChevronRight } from 'lucide-react'
 
 const DAY_COLORS = [
   'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800',
@@ -17,6 +17,13 @@ const DAY_COLORS = [
 ]
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+
+const LEFT_BORDER_COLORS = [
+  'border-l-blue-400', 'border-l-green-400', 'border-l-orange-400',
+  'border-l-purple-400', 'border-l-yellow-400', 'border-l-pink-400', 'border-l-red-400',
+]
+
+const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
 
@@ -55,6 +62,11 @@ export function Itinerary() {
     }
     return [...map.entries()].sort((a, b) => b[1] - a[1])
   }, [trip.itinerary])
+
+  const tripDays = useMemo(() => {
+    if (!trip.startDate || !trip.endDate) return []
+    return eachDayOfInterval({ start: parseISO(trip.startDate), end: parseISO(trip.endDate) })
+  }, [trip.startDate, trip.endDate])
 
   const weeks = useMemo(() => {
     if (!trip.startDate || !trip.endDate) return []
@@ -136,9 +148,52 @@ export function Itinerary() {
         </div>
       )}
 
-      {/* Weekly calendars */}
+      {/* Mobile: vertical list */}
+      {tripDays.length > 0 && (
+        <div className="block sm:hidden px-4 pt-4 space-y-2">
+          {tripDays.map(day => {
+            const dateStr = format(day, 'yyyy-MM-dd')
+            const data = dayMap.get(dateStr)
+            const hasConflict = conflictDates.has(dateStr)
+            const cityIdx = data?.city ? cityColorMap.get(data.city) : undefined
+            const borderColor = cityIdx !== undefined ? LEFT_BORDER_COLORS[cityIdx] : 'border-l-gray-200 dark:border-l-gray-600'
+            const dayName = DAY_NAMES[(day.getDay() + 6) % 7]
+            return (
+              <button
+                key={dateStr}
+                onClick={() => openEdit(dateStr)}
+                className={`w-full flex items-start gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 border-l-4 ${borderColor} rounded-xl p-3 text-left shadow-sm active:scale-[0.99] transition-transform ${hasConflict ? 'ring-1 ring-red-300' : ''}`}
+              >
+                <div className="flex-shrink-0 w-9 text-center">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 leading-none">{dayName}</p>
+                  <p className="text-xl font-bold text-gray-800 dark:text-white leading-tight">{format(day, 'd')}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 leading-none">{MONTH_NAMES[day.getMonth()]}</p>
+                </div>
+                <div className="flex-1 min-w-0 py-0.5">
+                  {data?.city
+                    ? <p className="text-sm font-semibold text-gray-900 dark:text-white">{data.city}</p>
+                    : <p className="text-sm text-gray-400 dark:text-gray-500 italic">Sin ciudad</p>
+                  }
+                  {data?.notes && (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{data.notes}</p>
+                  )}
+                  {hasConflict && (
+                    <div className="flex items-center gap-1 mt-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
+                      <span className="text-xs text-red-500">Conflicto de transporte</span>
+                    </div>
+                  )}
+                </div>
+                <ChevronRight size={16} className="flex-shrink-0 text-gray-300 dark:text-gray-600 mt-1.5" />
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Desktop: weekly calendars */}
       {weeks.map((week, wi) => (
-        <div key={wi} className="px-4 pt-4">
+        <div key={wi} className="hidden sm:block px-4 pt-4">
           <div className="grid grid-cols-7 gap-1">
             {DAY_NAMES.map((d, i) => (
               <div key={i} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 pb-1">{d}</div>
