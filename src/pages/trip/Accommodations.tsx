@@ -9,7 +9,7 @@ import { MoneyInput } from '../../components/ui/MoneyInput'
 import type { Accommodation } from '../../types'
 
 const CURRENCIES = ['USD', 'EUR', 'ARS', 'GBP', 'BRL', 'CLP', 'MXN', 'COP']
-const EMPTY_COST = { price: 0, currency: 'USD', paid: 0, fullPay: true, paidBy: '' }
+const EMPTY_COST = { price: 0, currency: 'USD', paid: 0, fullPay: true, paidBy: '', includedTravelers: [] as string[] }
 
 const fmtDate = (d: string) => d ? d.split('-').reverse().join('/') : ''
 
@@ -73,7 +73,7 @@ export function Accommodations() {
         currency: costForm.currency,
         reserved: true,
         paidBy: costForm.paidBy,
-        includedTravelers: [],
+        includedTravelers: costForm.paidBy ? costForm.includedTravelers : [],
       })
     }
     setModal(null)
@@ -231,56 +231,82 @@ export function Accommodations() {
               <input type="url" className={inputCls} placeholder="https://www.booking.com/..." value={form.url} onChange={e => f('url', e.target.value)} />
             </div>
             {modal === 'add' && (
-              <div className="border-t border-gray-100 dark:border-gray-800 pt-3">
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input type="checkbox" checked={showCost} onChange={e => setShowCost(e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600" />
+                    className="w-4 h-4 rounded accent-blue-600" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Registrar costo</span>
                 </label>
                 {showCost && (
-                  <div className="mt-3 space-y-3">
-                    <div className="grid grid-cols-[1fr,auto] gap-2 items-end">
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className={labelCls}>Precio total</label>
-                        <MoneyInput value={costForm.price} onChange={v => setCostForm(p => ({ ...p, price: v }))} />
+                        <MoneyInput className={inputCls} value={costForm.price}
+                          onChange={v => setCostForm(p => ({ ...p, price: v }))} />
                       </div>
                       <div>
                         <label className={labelCls}>Moneda</label>
-                        <select className={inputCls} value={costForm.currency}
+                        <select className={inputCls + ' bg-white dark:bg-gray-700'} value={costForm.currency}
                           onChange={e => setCostForm(p => ({ ...p, currency: e.target.value }))}>
-                          {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                          {CURRENCIES.map(c => <option key={c}>{c}</option>)}
                         </select>
                       </div>
                     </div>
                     <div>
-                      <label className={labelCls}>Pago</label>
-                      <div className="flex gap-4">
+                      <label className={labelCls}>Pagado</label>
+                      <div className="flex gap-2 mb-2">
                         {([{ v: true, label: 'Total' }, { v: false, label: 'Parcial' }] as const).map(({ v, label }) => (
-                          <label key={label} className="flex items-center gap-1.5 text-sm cursor-pointer">
-                            <input type="radio" checked={costForm.fullPay === v}
-                              onChange={() => setCostForm(p => ({ ...p, fullPay: v }))} />
+                          <button key={label} type="button"
+                            onClick={() => setCostForm(p => ({ ...p, fullPay: v }))}
+                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${costForm.fullPay === v ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
                             {label}
-                          </label>
+                          </button>
                         ))}
                       </div>
+                      {!costForm.fullPay && (
+                        <MoneyInput className={inputCls} value={costForm.paid}
+                          onChange={v => setCostForm(p => ({ ...p, paid: v }))} />
+                      )}
                     </div>
-                    {!costForm.fullPay && (
-                      <div>
-                        <label className={labelCls}>Monto pagado</label>
-                        <MoneyInput value={costForm.paid} onChange={v => setCostForm(p => ({ ...p, paid: v }))} />
-                      </div>
-                    )}
                     {trip.travelers.length > 0 && (
-                      <div>
-                        <label className={labelCls}>Pagó</label>
-                        <select className={inputCls} value={costForm.paidBy}
-                          onChange={e => setCostForm(p => ({ ...p, paidBy: e.target.value }))}>
-                          <option value="">Sin asignar</option>
-                          {trip.travelers.map(tv => <option key={tv.id} value={tv.name}>{tv.name}</option>)}
-                        </select>
+                      <div className="border-t border-gray-100 dark:border-gray-700 pt-3 space-y-3">
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">División entre viajeros (opcional)</p>
+                        <div>
+                          <label className={labelCls}>Pagado por</label>
+                          <div className="flex flex-wrap gap-2">
+                            {trip.travelers.map(tv => (
+                              <button key={tv.id} type="button"
+                                onClick={() => setCostForm(p => ({ ...p, paidBy: p.paidBy === tv.name ? '' : tv.name, includedTravelers: [] }))}
+                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${costForm.paidBy === tv.name ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                                {tv.name}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {costForm.paidBy && (
+                          <div>
+                            <label className={labelCls}>Incluye a</label>
+                            <div className="flex flex-wrap gap-2">
+                              {trip.travelers.map(tv => {
+                                const included = costForm.includedTravelers
+                                return (
+                                  <button key={tv.id} type="button"
+                                    onClick={() => setCostForm(p => {
+                                      const cur = p.includedTravelers
+                                      return { ...p, includedTravelers: cur.includes(tv.name) ? cur.filter(n => n !== tv.name) : [...cur, tv.name] }
+                                    })}
+                                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${included.includes(tv.name) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                                    {tv.name}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             )}
