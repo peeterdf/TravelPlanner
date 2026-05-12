@@ -4,7 +4,7 @@ import { useTripsStore } from '../../store/tripsStore'
 import { validateItinerary } from '../../utils/validate'
 import { Modal } from '../../components/ui/Modal'
 import { format, eachDayOfInterval, startOfWeek, parseISO, addDays } from 'date-fns'
-import { Calendar, AlertTriangle, Moon, ChevronRight } from 'lucide-react'
+import { Calendar, AlertTriangle, Moon, ChevronRight, Plane } from 'lucide-react'
 
 const DAY_COLORS = [
   'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800',
@@ -62,6 +62,27 @@ export function Itinerary() {
     }
     return [...map.entries()].sort((a, b) => b[1] - a[1])
   }, [trip.itinerary])
+
+  const departuresByDate = useMemo(() => {
+    const map = new Map<string, typeof trip.transports>()
+    for (const t of trip.transports) {
+      if (!t.departureDate) continue
+      map.set(t.departureDate, [...(map.get(t.departureDate) ?? []), t])
+    }
+    return map
+  }, [trip.transports])
+
+  const accommodationByDate = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const a of trip.accommodations) {
+      if (!a.checkInDate || !a.city) continue
+      const checkIn = parseISO(a.checkInDate)
+      for (let n = 0; n < a.nights; n++) {
+        map.set(format(addDays(checkIn, n), 'yyyy-MM-dd'), a.city)
+      }
+    }
+    return map
+  }, [trip.accommodations])
 
   const tripDays = useMemo(() => {
     if (!trip.startDate || !trip.endDate) return []
@@ -179,6 +200,22 @@ export function Itinerary() {
                   {data?.notes && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{data.notes}</p>
                   )}
+                  {(departuresByDate.get(dateStr) ?? []).map(t => (
+                    <div key={t.id} className="flex items-center gap-1 mt-0.5">
+                      <Plane size={10} className="text-blue-400 flex-shrink-0" />
+                      <span className="text-xs text-blue-600 dark:text-blue-400 truncate">
+                        {t.origin} → {t.destination}{t.departureTime ? ` ${t.departureTime}` : ''}
+                      </span>
+                    </div>
+                  ))}
+                  {accommodationByDate.has(dateStr) && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <Moon size={10} className="text-indigo-400 flex-shrink-0" />
+                      <span className="text-xs text-indigo-600 dark:text-indigo-400 truncate">
+                        {accommodationByDate.get(dateStr)}
+                      </span>
+                    </div>
+                  )}
                   {hasConflict && (
                     <div className="flex items-center gap-1 mt-1">
                       <div className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
@@ -227,6 +264,18 @@ export function Itinerary() {
                   )}
                   {data?.notes && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-tight line-clamp-1">{data.notes}</p>
+                  )}
+                  {(departuresByDate.get(dateStr) ?? []).slice(0, 1).map(t => (
+                    <div key={t.id} className="flex items-center gap-0.5 mt-0.5">
+                      <Plane size={8} className="text-blue-400 flex-shrink-0" />
+                      <span className="text-[9px] leading-none text-blue-500 dark:text-blue-400 truncate">{t.destination}</span>
+                    </div>
+                  ))}
+                  {accommodationByDate.has(dateStr) && (
+                    <div className="flex items-center gap-0.5 mt-0.5">
+                      <Moon size={8} className="text-indigo-400 flex-shrink-0" />
+                      <span className="text-[9px] leading-none text-indigo-500 dark:text-indigo-400 truncate">{accommodationByDate.get(dateStr)}</span>
+                    </div>
                   )}
                   {hasConflict && <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1" />}
                 </button>
