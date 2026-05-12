@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Plus, Trash2, Pencil, Plane, ExternalLink, CircleDollarSign } from 'lucide-react'
 import { DateInput } from '../../components/ui/DateInput'
+import { TimeInput } from '../../components/ui/TimeInput'
 import { MoneyInput } from '../../components/ui/MoneyInput'
 import { useTripsStore } from '../../store/tripsStore'
 import { Modal } from '../../components/ui/Modal'
@@ -206,7 +207,7 @@ export function Transports() {
               </div>
               <div>
                 <label className={labelCls}>Hora salida</label>
-                <input type="time" className={inputCls} value={form.departureTime} onChange={e => f('departureTime', e.target.value)} />
+                <TimeInput className={inputCls} value={form.departureTime} onChange={v => f('departureTime', v)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -216,7 +217,7 @@ export function Transports() {
               </div>
               <div>
                 <label className={labelCls}>Hora llegada</label>
-                <input type="time" className={inputCls} value={form.arrivalTime} onChange={e => f('arrivalTime', e.target.value)} />
+                <TimeInput className={inputCls} value={form.arrivalTime} onChange={v => f('arrivalTime', v)} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
