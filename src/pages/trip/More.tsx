@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { Star, CheckSquare, FileText, ClipboardList, ArrowRight, LayoutDashboard } from 'lucide-react'
+import { Star, CheckSquare, FileText, ClipboardList, ArrowRight, LayoutDashboard, Ticket } from 'lucide-react'
 
 export function More() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
   const items = [
     { icon: LayoutDashboard, label: 'Resumen del viaje', desc: 'Vista general y viajeros', to: 'dashboard', color: 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' },
+    { icon: Ticket, label: 'Pases de embarque', desc: 'Tus pkpass y QR personales', to: 'pases', color: 'text-violet-600 bg-violet-50 dark:bg-violet-900/30 dark:text-violet-400' },
     { icon: Star, label: 'Actividades', desc: 'Lugares y planes por día', to: 'actividades', color: 'text-pink-600 bg-pink-50 dark:bg-pink-900/30 dark:text-pink-400' },
     { icon: CheckSquare, label: 'Checklist equipaje', desc: 'Listas de packing por categoría', to: 'checklist', color: 'text-teal-600 bg-teal-50 dark:bg-teal-900/30 dark:text-teal-400' },
     { icon: FileText, label: 'Notas', desc: 'Direcciones, tips y recordatorios', to: 'notas', color: 'text-amber-600 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400' },

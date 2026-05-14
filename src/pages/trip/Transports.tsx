@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Plane, ExternalLink, CircleDollarSign } from 'lucide-react'
+import { Plus, Trash2, Pencil, Plane, ExternalLink, CircleDollarSign, Ticket } from 'lucide-react'
 import { DateInput } from '../../components/ui/DateInput'
 import { TimeInput } from '../../components/ui/TimeInput'
 import { MoneyInput } from '../../components/ui/MoneyInput'
 import { useTripsStore } from '../../store/tripsStore'
+import { useBoardingPassStore } from '../../store/boardingPassStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { TransportBadge } from '../../components/ui/Badge'
@@ -30,6 +31,7 @@ export function Transports() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
   const { trips, addTransport, updateTransport, deleteTransport, addExpense } = useTripsStore()
+  const { passes } = useBoardingPassStore()
   const trip = trips.find(t => t.id === tripId)
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
   const [form, setForm] = useState<Omit<Transport, 'id'>>(EMPTY)
@@ -158,6 +160,13 @@ export function Transports() {
                   title="Agregar a gastos"
                 >
                   <CircleDollarSign size={16} />
+                </button>
+                <button
+                  onClick={() => navigate(`/viaje/${tripId}/pases`)}
+                  className={`p-2 transition-colors ${passes.some(p => p.transportId === t.id && p.tripId === tripId) ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'}`}
+                  title="Pases de embarque"
+                >
+                  <Ticket size={16} />
                 </button>
                 <button onClick={() => openEdit(t)} className="p-2 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
                   <Pencil size={16} />

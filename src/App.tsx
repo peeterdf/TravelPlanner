@@ -4,6 +4,7 @@ import { Share2, Sun, Moon, Monitor, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useTripsStore } from './store/tripsStore'
 import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
+import { useBoardingPassStore } from './store/boardingPassStore'
 import { loadOrCreateProfile } from './lib/userProfile'
 import { Home } from './pages/Home'
 import { WelcomeScreen } from './pages/WelcomeScreen'
@@ -17,6 +18,7 @@ import { Packing } from './pages/trip/Packing'
 import { More } from './pages/trip/More'
 import { Notes } from './pages/trip/Notes'
 import { Audit } from './pages/trip/Audit'
+import { BoardingPasses } from './pages/trip/BoardingPasses'
 import { Header } from './components/layout/Header'
 import { BottomNav } from './components/layout/BottomNav'
 import { SyncDot } from './components/ui/SyncDot'
@@ -56,6 +58,7 @@ const SECTION_TITLES: Record<string, string> = {
   notas: 'Notas',
   auditoria: 'Auditoría',
   mas: 'Más',
+  pases: 'Pases de embarque',
 }
 
 const BOTTOM_NAV_SECTIONS = new Set(['dashboard', 'transportes', 'itinerario', 'alojamiento', 'gastos', 'mas'])
@@ -72,7 +75,7 @@ function TripLayout() {
 
   const title = SECTION_TITLES[section] ?? ''
 
-  const SUB_SECTIONS = new Set(['actividades', 'checklist', 'notas', 'auditoria'])
+  const SUB_SECTIONS = new Set(['actividades', 'checklist', 'notas', 'auditoria', 'pases'])
   const backTo = section === 'dashboard'
     ? '/'
     : SUB_SECTIONS.has(section)
@@ -129,6 +132,7 @@ function TripLayout() {
           <Route path="notas" element={<Notes />} />
           <Route path="auditoria" element={<Audit />} />
           <Route path="mas" element={<More />} />
+          <Route path="pases" element={<BoardingPasses />} />
           <Route path="*" element={<Navigate to="dashboard" replace />} />
         </Routes>
       </main>
@@ -139,11 +143,13 @@ function TripLayout() {
 
 function AppLoader() {
   const { load } = useTripsStore()
+  const { load: loadPasses } = useBoardingPassStore()
   const { user, loading } = useAuthStore()
   useEffect(() => {
     if (loading) return
     load()
-  }, [loading, user?.uid])
+    if (user?.uid && !user.isAnonymous) loadPasses(user.uid)
+  }, [loading, user?.uid, user?.isAnonymous])
   return null
 }
 

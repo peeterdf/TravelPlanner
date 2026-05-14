@@ -123,3 +123,14 @@ export interface ItineraryConflict {
   date: string
   message: string
 }
+
+export interface BoardingPass {
+  id: string
+  tripId?: string
+  transportId?: string
+  label: string
+  img?: string
+  value?: string
+  format?: string
+  createdAt: string
+}
