@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Building2, Phone, MapPin, Key, Hash, ExternalLink, CircleDollarSign } from 'lucide-react'
+import { Plus, Trash2, Pencil, Building2, Phone, MapPin, Key, Hash, ExternalLink, CircleDollarSign, Navigation } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
@@ -82,9 +82,16 @@ export function Accommodations() {
   const f = (field: keyof Omit<Accommodation, 'id'>, val: string | number) =>
     setForm(p => ({ ...p, [field]: val }))
 
+  const sorted = [...trip.accommodations].sort((a, b) => {
+    if (!a.checkInDate && !b.checkInDate) return 0
+    if (!a.checkInDate) return 1
+    if (!b.checkInDate) return -1
+    return a.checkInDate.localeCompare(b.checkInDate)
+  })
+
   return (
     <div className="p-4 space-y-3 pb-28">
-      {trip.accommodations.length === 0 ? (
+      {sorted.length === 0 ? (
         <EmptyState
           icon={<Building2 size={52} />}
           title="Sin alojamientos"
@@ -92,7 +99,7 @@ export function Accommodations() {
           action={<button onClick={openAdd} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium">Agregar alojamiento</button>}
         />
       ) : (
-        trip.accommodations.map(a => (
+        sorted.map(a => (
           <div key={a.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
@@ -130,7 +137,16 @@ export function Accommodations() {
                   {a.address && (
                     <div className="flex items-start gap-2 text-sm">
                       <MapPin size={13} className="text-gray-400 shrink-0 mt-0.5" />
-                      <span className="text-gray-600 dark:text-gray-300 leading-tight">{a.address}</span>
+                      <span className="text-gray-600 dark:text-gray-300 leading-tight flex-1">{a.address}</span>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:text-blue-700 dark:text-blue-400 shrink-0"
+                        title="Abrir en Google Maps"
+                      >
+                        <Navigation size={13} />
+                      </a>
                     </div>
                   )}
                   {a.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{a.notes}</p>}

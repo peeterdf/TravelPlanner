@@ -41,8 +41,12 @@ export function Transports() {
 
   if (!trip) return null
 
-  const sorted = [...trip.transports].sort((a, b) =>
-    (a.departureDate + a.departureTime).localeCompare(b.departureDate + b.departureTime))
+  const sorted = [...trip.transports].sort((a, b) => {
+    if (!a.departureDate && !b.departureDate) return 0
+    if (!a.departureDate) return 1
+    if (!b.departureDate) return -1
+    return (a.departureDate + (a.departureTime || '')).localeCompare(b.departureDate + (b.departureTime || ''))
+  })
 
   const openAdd = () => {
     setForm(EMPTY)
