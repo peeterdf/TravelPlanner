@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { X } from 'lucide-react'
+import { X, ExternalLink } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import type { BoardingPass } from '../../types'
 
@@ -46,7 +46,19 @@ export function BoardingPassViewer({ bp, onClose }: Props) {
         </div>
       )}
 
-      {!bp.img && !bp.value && (
+      {!bp.img && !bp.value && bp.url && (
+        <a
+          href={bp.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-sm font-medium"
+        >
+          <ExternalLink size={16} />
+          Abrir en Google Wallet
+        </a>
+      )}
+
+      {!bp.img && !bp.value && !bp.url && (
         <p className="text-white/40 text-sm">No se pudo leer el código del pase</p>
       )}
     </div>

@@ -132,5 +132,6 @@ export interface BoardingPass {
   img?: string
   value?: string
   format?: string
+  url?: string
   createdAt: string
 }
