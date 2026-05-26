@@ -233,14 +233,18 @@ export function Itinerary() {
                       </span>
                     </div>
                   )}
-                  {(activitiesByDate.get(dateStr) ?? []).map(a => (
-                    <div key={a.id} className="flex items-center gap-1 mt-0.5">
-                      <Star size={10} className={`flex-shrink-0 ${a.done ? 'text-green-400' : 'text-pink-400'}`} />
-                      <span className={`text-xs text-pink-600 dark:text-pink-400 truncate ${a.done ? 'line-through opacity-60' : ''}`}>
-                        {a.place}{a.time ? ` ${a.time}` : ''}
-                      </span>
-                    </div>
-                  ))}
+                  {(activitiesByDate.get(dateStr) ?? []).map(a => {
+                    const isRealizada = a.status === 'realizada'
+                    const isReservada = a.status === 'reservada'
+                    return (
+                      <div key={a.id} className="flex items-center gap-1 mt-0.5">
+                        <Star size={10} className={`flex-shrink-0 ${isRealizada ? 'text-green-400' : isReservada ? 'text-blue-400' : 'text-pink-400'}`} />
+                        <span className={`text-xs truncate ${isRealizada ? 'line-through opacity-60 text-gray-400' : isReservada ? 'text-blue-600 dark:text-blue-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                          {a.place}{a.time ? ` ${a.time}` : ''}
+                        </span>
+                      </div>
+                    )
+                  })}
                   {hasConflict && (
                     <div className="flex items-center gap-1 mt-1">
                       <div className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
@@ -302,12 +306,16 @@ export function Itinerary() {
                       <span className="text-[9px] leading-none text-indigo-500 dark:text-indigo-400 truncate">{accommodationByDate.get(dateStr)}</span>
                     </div>
                   )}
-                  {(activitiesByDate.get(dateStr) ?? []).slice(0, 2).map(a => (
-                    <div key={a.id} className="flex items-center gap-0.5 mt-0.5">
-                      <Star size={8} className={`flex-shrink-0 ${a.done ? 'text-green-400' : 'text-pink-400'}`} />
-                      <span className={`text-[9px] leading-none text-pink-500 dark:text-pink-400 truncate ${a.done ? 'line-through opacity-60' : ''}`}>{a.place}</span>
-                    </div>
-                  ))}
+                  {(activitiesByDate.get(dateStr) ?? []).slice(0, 2).map(a => {
+                    const isRealizada = a.status === 'realizada'
+                    const isReservada = a.status === 'reservada'
+                    return (
+                      <div key={a.id} className="flex items-center gap-0.5 mt-0.5">
+                        <Star size={8} className={`flex-shrink-0 ${isRealizada ? 'text-green-400' : isReservada ? 'text-blue-400' : 'text-pink-400'}`} />
+                        <span className={`text-[9px] leading-none truncate ${isRealizada ? 'line-through opacity-60 text-gray-400' : isReservada ? 'text-blue-500 dark:text-blue-400' : 'text-pink-500 dark:text-pink-400'}`}>{a.place}</span>
+                      </div>
+                    )
+                  })}
                   {(activitiesByDate.get(dateStr)?.length ?? 0) > 2 && (
                     <span className="text-[9px] leading-none text-pink-400 mt-0.5">+{(activitiesByDate.get(dateStr)?.length ?? 0) - 2} más</span>
                   )}

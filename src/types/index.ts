@@ -40,6 +40,8 @@ export interface ItineraryDay {
   notes: string
 }
 
+export type ActivityStatus = 'pendiente' | 'reservada' | 'realizada'
+
 export interface Activity {
   id: string
   date: string
@@ -49,7 +51,7 @@ export interface Activity {
   notes: string
   time?: string
   url?: string
-  done?: boolean
+  status?: ActivityStatus
 }
 
 export type ExpenseCategory = 'vuelo' | 'alojamiento' | 'comida' | 'transporte' | 'actividad' | 'compra' | 'otro'
