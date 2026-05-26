@@ -1,18 +1,30 @@
 import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Star, ExternalLink, CircleDollarSign, CheckCircle2, Clock } from 'lucide-react'
+import { Plus, Trash2, Pencil, Star, ExternalLink, CircleDollarSign, Clock, Circle, Ticket, CheckCircle2 } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { DateInput } from '../../components/ui/DateInput'
 import { TimeInput } from '../../components/ui/TimeInput'
 import { MoneyInput } from '../../components/ui/MoneyInput'
-import type { Activity } from '../../types'
+import type { Activity, ActivityStatus } from '../../types'
 
 const ACTIVITY_TYPES = ['Museo', 'Restaurante', 'Excursión', 'Monumento', 'Show/Evento', 'Compras', 'Naturaleza', 'Playa', 'Otro']
 const CURRENCIES = ['USD', 'EUR', 'ARS', 'GBP', 'BRL', 'CLP', 'MXN', 'COP']
 const EMPTY_COST = { price: 0, currency: 'USD', paid: 0, fullPay: true, paidBy: '', includedTravelers: [] as string[] }
-const EMPTY: Omit<Activity, 'id'> = { date: '', city: '', place: '', type: '', notes: '', time: '', url: '', done: false }
+const EMPTY: Omit<Activity, 'id'> = { date: '', city: '', place: '', type: '', notes: '', time: '', url: '', status: 'pendiente' }
+
+const STATUS_CYCLE: Record<ActivityStatus, ActivityStatus> = {
+  pendiente: 'reservada',
+  reservada: 'realizada',
+  realizada: 'pendiente',
+}
+
+const STATUS_CONFIG: Record<ActivityStatus, { icon: React.ElementType; color: string; label: string; bg: string }> = {
+  pendiente: { icon: Circle,       color: 'text-gray-400 dark:text-gray-500', label: 'Pendiente', bg: 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300' },
+  reservada: { icon: Ticket,       color: 'text-blue-500 dark:text-blue-400',  label: 'Reservada', bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400' },
+  realizada: { icon: CheckCircle2, color: 'text-green-500',                    label: 'Realizada', bg: 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400' },
+}
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
 const labelCls = 'block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1'
@@ -72,7 +84,7 @@ export function Activities() {
   }
 
   const openEdit = (a: Activity) => {
-    setForm({ date: a.date, city: a.city, place: a.place, type: a.type, notes: a.notes, time: a.time ?? '', url: a.url ?? '', done: a.done ?? false })
+    setForm({ date: a.date, city: a.city, place: a.place, type: a.type, notes: a.notes, time: a.time ?? '', url: a.url ?? '', status: a.status ?? 'pendiente' })
     setEditId(a.id)
     setShowCost(false)
     setCostForm({ ...EMPTY_COST, currency: trip.currency ?? 'USD' })
@@ -108,7 +120,10 @@ export function Activities() {
     setModal(null)
   }
 
-  const toggleDone = (a: Activity) => updateActivity(tripId!, { ...a, done: !a.done })
+  const cycleStatus = (a: Activity) => {
+    const current = a.status ?? 'pendiente'
+    updateActivity(tripId!, { ...a, status: STATUS_CYCLE[current] })
+  }
 
   const f = (field: 'date' | 'city' | 'place' | 'type' | 'notes' | 'time' | 'url', val: string) =>
     setForm(p => ({ ...p, [field]: val }))
@@ -135,49 +150,56 @@ export function Activities() {
                 </span>
               </div>
               <div className="space-y-2">
-                {acts.map(a => (
-                  <div key={a.id} className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-3 py-3 flex items-start gap-2 transition-opacity ${a.done ? 'opacity-60' : ''}`}>
-                    <button
-                      onClick={() => toggleDone(a)}
-                      className={`mt-0.5 shrink-0 transition-colors ${a.done ? 'text-green-500' : 'text-gray-300 dark:text-gray-600 hover:text-green-400'}`}
-                      title={a.done ? 'Marcar como pendiente' : 'Marcar como hecho'}
-                    >
-                      <CheckCircle2 size={18} />
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`font-medium text-gray-900 dark:text-white text-sm ${a.done ? 'line-through' : ''}`}>{a.place}</p>
-                        {a.type && (
-                          <span className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">{a.type}</span>
-                        )}
-                        {a.time && (
-                          <span className="flex items-center gap-0.5 text-xs text-gray-500 dark:text-gray-400">
-                            <Clock size={10} />
-                            {a.time} hs
-                          </span>
-                        )}
-                      </div>
-                      {a.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{a.notes}</p>}
-                    </div>
-                    <div className="flex gap-0.5 shrink-0">
-                      {a.url && (
-                        <a href={a.url} target="_blank" rel="noopener noreferrer"
-                          className="p-1.5 text-blue-400 hover:text-blue-600 dark:hover:text-blue-300" aria-label="Abrir reserva">
-                          <ExternalLink size={14} />
-                        </a>
-                      )}
+                {acts.map(a => {
+                  const status = a.status ?? 'pendiente'
+                  const cfg = STATUS_CONFIG[status]
+                  const StatusIcon = cfg.icon
+                  const isRealizada = status === 'realizada'
+                  return (
+                    <div key={a.id} className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm px-3 py-3 flex items-start gap-2 transition-opacity ${isRealizada ? 'opacity-60' : ''}`}>
                       <button
-                        onClick={() => navigate(`/viaje/${tripId}/gastos`, { state: { prefill: { concept: a.place, date: a.date, detail: a.city, category: 'actividad' } } })}
-                        className="p-1.5 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
-                        title="Agregar a gastos"
+                        onClick={() => cycleStatus(a)}
+                        className={`mt-0.5 shrink-0 transition-colors ${cfg.color}`}
+                        title={`Estado: ${cfg.label} — click para cambiar`}
                       >
-                        <CircleDollarSign size={14} />
+                        <StatusIcon size={18} />
                       </button>
-                      <button onClick={() => openEdit(a)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><Pencil size={14} /></button>
-                      <button onClick={() => { if (confirm(`¿Eliminar "${a.place}"?`)) deleteActivity(tripId!, a.id) }} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className={`font-medium text-gray-900 dark:text-white text-sm ${isRealizada ? 'line-through' : ''}`}>{a.place}</p>
+                          {a.type && (
+                            <span className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">{a.type}</span>
+                          )}
+                          <span className={`text-xs px-2 py-0.5 rounded-full border ${cfg.bg}`}>{cfg.label}</span>
+                          {a.time && (
+                            <span className="flex items-center gap-0.5 text-xs text-gray-500 dark:text-gray-400">
+                              <Clock size={10} />
+                              {a.time} hs
+                            </span>
+                          )}
+                        </div>
+                        {a.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{a.notes}</p>}
+                      </div>
+                      <div className="flex gap-0.5 shrink-0">
+                        {a.url && (
+                          <a href={a.url} target="_blank" rel="noopener noreferrer"
+                            className="p-1.5 text-blue-400 hover:text-blue-600 dark:hover:text-blue-300" aria-label="Abrir reserva">
+                            <ExternalLink size={14} />
+                          </a>
+                        )}
+                        <button
+                          onClick={() => navigate(`/viaje/${tripId}/gastos`, { state: { prefill: { concept: a.place, date: a.date, detail: a.city, category: 'actividad' } } })}
+                          className="p-1.5 text-gray-400 hover:text-green-600 dark:hover:text-green-400"
+                          title="Agregar a gastos"
+                        >
+                          <CircleDollarSign size={14} />
+                        </button>
+                        <button onClick={() => openEdit(a)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><Pencil size={14} /></button>
+                        <button onClick={() => { if (confirm(`¿Eliminar "${a.place}"?`)) deleteActivity(tripId!, a.id) }} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )
@@ -216,21 +238,26 @@ export function Activities() {
                 <TimeInput className={inputCls} value={form.time ?? ''} onChange={v => f('time', v)} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Ciudad</label>
-                <input className={inputCls} placeholder="Barcelona" value={form.city} onChange={e => f('city', e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>Estado</label>
-                <button
-                  type="button"
-                  onClick={() => setForm(p => ({ ...p, done: !p.done }))}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${form.done ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}
-                >
-                  <CheckCircle2 size={15} />
-                  {form.done ? 'Hecho' : 'Pendiente'}
-                </button>
+            <div>
+              <label className={labelCls}>Ciudad</label>
+              <input className={inputCls} placeholder="Barcelona" value={form.city} onChange={e => f('city', e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>Estado</label>
+              <div className="flex gap-2">
+                {(['pendiente', 'reservada', 'realizada'] as ActivityStatus[]).map(s => {
+                  const cfg = STATUS_CONFIG[s]
+                  const Icon = cfg.icon
+                  const active = form.status === s
+                  return (
+                    <button key={s} type="button"
+                      onClick={() => setForm(p => ({ ...p, status: s }))}
+                      className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-xs font-medium border transition-colors ${active ? cfg.bg : 'border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400'}`}>
+                      <Icon size={13} />
+                      {cfg.label}
+                    </button>
+                  )
+                })}
               </div>
             </div>
             <div>
