@@ -54,6 +54,9 @@ export function Activities() {
 
   const sorted = useMemo(() =>
     [...(trip?.activities ?? [])].sort((a, b) => {
+      if (!a.date && !b.date) return 0
+      if (!a.date) return 1
+      if (!b.date) return -1
       const dateCmp = a.date.localeCompare(b.date)
       if (dateCmp !== 0) return dateCmp
       if (!a.time && !b.time) return 0
@@ -62,13 +65,27 @@ export function Activities() {
       return a.time.localeCompare(b.time)
     }), [trip?.activities])
 
-  const grouped = useMemo(() =>
-    sorted.reduce<Record<string, typeof sorted>>((acc, a) => {
-      const key = `${a.date}|${a.city}`
-      if (!acc[key]) acc[key] = []
-      acc[key].push(a)
-      return acc
-    }, {}), [sorted])
+  const grouped = useMemo(() => {
+    const groups: Record<string, typeof sorted> = {}
+    for (const a of sorted) {
+      const key = a.city.trim() || '__sin_ciudad__'
+      if (!groups[key]) groups[key] = []
+      groups[key].push(a)
+    }
+    return groups
+  }, [sorted])
+
+  const groupOrder = useMemo(() =>
+    Object.keys(grouped).sort((a, b) => {
+      if (a === '__sin_ciudad__') return 1
+      if (b === '__sin_ciudad__') return -1
+      const aDate = grouped[a].find(x => x.date)?.date ?? ''
+      const bDate = grouped[b].find(x => x.date)?.date ?? ''
+      if (!aDate && !bDate) return a.localeCompare(b)
+      if (!aDate) return 1
+      if (!bDate) return -1
+      return aDate.localeCompare(bDate)
+    }), [grouped])
 
   if (!trip) return null
 
@@ -138,13 +155,15 @@ export function Activities() {
           action={<button onClick={openAdd} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium">Agregar actividad</button>}
         />
       ) : (
-        Object.entries(grouped).map(([key, acts]) => {
-          const [date, city] = key.split('|')
+        groupOrder.map(cityKey => {
+          const acts = grouped[cityKey]
+          const isSinCiudad = cityKey === '__sin_ciudad__'
           return (
-            <div key={key}>
+            <div key={cityKey}>
               <div className="flex items-baseline gap-2 mb-2">
-                <h3 className="font-semibold text-gray-900 dark:text-white">{city || fmtDateLong(date)}</h3>
-                {city && <span className="text-xs text-gray-500 dark:text-gray-400">{fmtDateLong(date)}</span>}
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  {isSinCiudad ? 'Sin ciudad' : cityKey}
+                </h3>
                 <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
                   {acts.length} {acts.length === 1 ? 'actividad' : 'actividades'}
                 </span>
@@ -171,13 +190,18 @@ export function Activities() {
                             <span className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">{a.type}</span>
                           )}
                           <span className={`text-xs px-2 py-0.5 rounded-full border ${cfg.bg}`}>{cfg.label}</span>
-                          {a.time && (
-                            <span className="flex items-center gap-0.5 text-xs text-gray-500 dark:text-gray-400">
-                              <Clock size={10} />
-                              {a.time} hs
-                            </span>
-                          )}
                         </div>
+                        {(a.date || a.time) && (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {a.date && <span className="text-xs text-gray-400 dark:text-gray-500">{fmtDateLong(a.date)}</span>}
+                            {a.time && (
+                              <span className="flex items-center gap-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                <Clock size={10} />
+                                {a.time} hs
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {a.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{a.notes}</p>}
                       </div>
                       <div className="flex gap-0.5 shrink-0">
