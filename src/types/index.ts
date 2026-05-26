@@ -47,6 +47,9 @@ export interface Activity {
   place: string
   type: string
   notes: string
+  time?: string
+  url?: string
+  done?: boolean
 }
 
 export type ExpenseCategory = 'vuelo' | 'alojamiento' | 'comida' | 'transporte' | 'actividad' | 'compra' | 'otro'

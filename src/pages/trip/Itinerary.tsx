@@ -4,7 +4,7 @@ import { useTripsStore } from '../../store/tripsStore'
 import { validateItinerary } from '../../utils/validate'
 import { Modal } from '../../components/ui/Modal'
 import { format, eachDayOfInterval, startOfWeek, parseISO, addDays } from 'date-fns'
-import { Calendar, AlertTriangle, Moon, ChevronRight, Plane } from 'lucide-react'
+import { Calendar, AlertTriangle, Moon, ChevronRight, Plane, Star } from 'lucide-react'
 
 const DAY_COLORS = [
   'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800',
@@ -83,6 +83,23 @@ export function Itinerary() {
     }
     return map
   }, [trip.accommodations])
+
+  const activitiesByDate = useMemo(() => {
+    const map = new Map<string, typeof trip.activities>()
+    for (const a of trip.activities) {
+      if (!a.date) continue
+      map.set(a.date, [...(map.get(a.date) ?? []), a])
+    }
+    map.forEach((acts, date) =>
+      map.set(date, [...acts].sort((x, y) => {
+        if (!x.time && !y.time) return 0
+        if (!x.time) return 1
+        if (!y.time) return -1
+        return x.time.localeCompare(y.time)
+      }))
+    )
+    return map
+  }, [trip.activities])
 
   const tripDays = useMemo(() => {
     if (!trip.startDate || !trip.endDate) return []
@@ -216,6 +233,14 @@ export function Itinerary() {
                       </span>
                     </div>
                   )}
+                  {(activitiesByDate.get(dateStr) ?? []).map(a => (
+                    <div key={a.id} className="flex items-center gap-1 mt-0.5">
+                      <Star size={10} className={`flex-shrink-0 ${a.done ? 'text-green-400' : 'text-pink-400'}`} />
+                      <span className={`text-xs text-pink-600 dark:text-pink-400 truncate ${a.done ? 'line-through opacity-60' : ''}`}>
+                        {a.place}{a.time ? ` ${a.time}` : ''}
+                      </span>
+                    </div>
+                  ))}
                   {hasConflict && (
                     <div className="flex items-center gap-1 mt-1">
                       <div className="w-1.5 h-1.5 rounded-full bg-red-400 flex-shrink-0" />
@@ -276,6 +301,15 @@ export function Itinerary() {
                       <Moon size={8} className="text-indigo-400 flex-shrink-0" />
                       <span className="text-[9px] leading-none text-indigo-500 dark:text-indigo-400 truncate">{accommodationByDate.get(dateStr)}</span>
                     </div>
+                  )}
+                  {(activitiesByDate.get(dateStr) ?? []).slice(0, 2).map(a => (
+                    <div key={a.id} className="flex items-center gap-0.5 mt-0.5">
+                      <Star size={8} className={`flex-shrink-0 ${a.done ? 'text-green-400' : 'text-pink-400'}`} />
+                      <span className={`text-[9px] leading-none text-pink-500 dark:text-pink-400 truncate ${a.done ? 'line-through opacity-60' : ''}`}>{a.place}</span>
+                    </div>
+                  ))}
+                  {(activitiesByDate.get(dateStr)?.length ?? 0) > 2 && (
+                    <span className="text-[9px] leading-none text-pink-400 mt-0.5">+{(activitiesByDate.get(dateStr)?.length ?? 0) - 2} más</span>
                   )}
                   {hasConflict && <div className="w-1.5 h-1.5 rounded-full bg-red-400 mt-1" />}
                 </button>
