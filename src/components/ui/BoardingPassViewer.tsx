@@ -27,7 +27,11 @@ export function BoardingPassViewer({ bp, onClose }: Props) {
       </button>
       <p className="text-white/60 text-sm mb-6 px-4 text-center">{bp.label}</p>
 
-      {bp.img && (
+      {bp.img && bp.img.startsWith('data:application/pdf') && (
+        <embed src={bp.img} type="application/pdf" className="w-full max-w-lg h-[75vh] rounded-lg" />
+      )}
+
+      {bp.img && !bp.img.startsWith('data:application/pdf') && (
         <img src={bp.img} alt={bp.label} className="max-w-full max-h-[80vh] object-contain" />
       )}
 

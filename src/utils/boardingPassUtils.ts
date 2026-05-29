@@ -38,6 +38,15 @@ async function extractPkpass(file: File): Promise<Pick<BoardingPass, 'value' | '
   return { value: bc?.message, format: bc?.format }
 }
 
+async function readAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
 export async function processFile(
   file: File,
   label: string,
@@ -49,6 +58,11 @@ export async function processFile(
   if (file.name.endsWith('.pkpass')) {
     const { value, format } = await extractPkpass(file)
     return { ...base, value, format }
+  }
+
+  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    const img = await readAsDataUrl(file)
+    return { ...base, img }
   }
 
   const img = await compressImage(file)

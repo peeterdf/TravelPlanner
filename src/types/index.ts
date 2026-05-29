@@ -133,6 +133,7 @@ export interface BoardingPass {
   id: string
   tripId?: string
   transportId?: string
+  activityId?: string
   label: string
   img?: string
   value?: string
