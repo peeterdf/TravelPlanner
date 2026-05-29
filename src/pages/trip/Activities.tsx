@@ -1,13 +1,17 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Star, ExternalLink, CircleDollarSign, Clock, Circle, Ticket, CheckCircle2 } from 'lucide-react'
+import { Plus, Trash2, Pencil, Star, ExternalLink, CircleDollarSign, Clock, Circle, Ticket, CheckCircle2, FileImage, Link2 } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
+import { useBoardingPassStore } from '../../store/boardingPassStore'
+import { useAuthStore } from '../../store/authStore'
 import { Modal } from '../../components/ui/Modal'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { DateInput } from '../../components/ui/DateInput'
 import { TimeInput } from '../../components/ui/TimeInput'
 import { MoneyInput } from '../../components/ui/MoneyInput'
-import type { Activity, ActivityStatus } from '../../types'
+import { BoardingPassViewer } from '../../components/ui/BoardingPassViewer'
+import { processFile, processGoogleWalletLink } from '../../utils/boardingPassUtils'
+import type { Activity, ActivityStatus, BoardingPass } from '../../types'
 
 const ACTIVITY_TYPES = ['Museo', 'Restaurante', 'Excursión', 'Monumento', 'Show/Evento', 'Compras', 'Naturaleza', 'Playa', 'Otro']
 const CURRENCIES = ['USD', 'EUR', 'ARS', 'GBP', 'BRL', 'CLP', 'MXN', 'COP']
@@ -45,12 +49,19 @@ export function Activities() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
   const { trips, addActivity, updateActivity, deleteActivity, addExpense } = useTripsStore()
+  const { passes, add: addPass, remove: removePass } = useBoardingPassStore()
+  const { user } = useAuthStore()
   const trip = trips.find(t => t.id === tripId)
   const [modal, setModal] = useState<'add' | 'edit' | null>(null)
   const [form, setForm] = useState<Omit<Activity, 'id'>>(EMPTY)
   const [editId, setEditId] = useState<string | null>(null)
   const [showCost, setShowCost] = useState(false)
   const [costForm, setCostForm] = useState(EMPTY_COST)
+  const [ticketsFor, setTicketsFor] = useState<string | null>(null)
+  const [viewingPass, setViewingPass] = useState<BoardingPass | null>(null)
+  const [ticketLinkMode, setTicketLinkMode] = useState(false)
+  const [ticketLinkVal, setTicketLinkVal] = useState('')
+  const ticketFileRef = useRef<HTMLInputElement>(null)
 
   const sorted = useMemo(() =>
     [...(trip?.activities ?? [])].sort((a, b) => {
@@ -142,6 +153,37 @@ export function Activities() {
     updateActivity(tripId!, { ...a, status: STATUS_CYCLE[current] })
   }
 
+  const activityPasses = (activityId: string) =>
+    passes.filter(p => p.activityId === activityId)
+
+  const handleTicketFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !ticketsFor || !user) return
+    e.target.value = ''
+    const activity = trip!.activities.find(a => a.id === ticketsFor)
+    const label = activity?.place ?? 'Entrada'
+    try {
+      const bp = await processFile(file, label, tripId)
+      await addPass(user.uid, { ...bp, activityId: ticketsFor })
+    } catch { /* ignore */ }
+  }
+
+  const handleTicketLink = async () => {
+    if (!ticketLinkVal.trim() || !ticketsFor || !user) return
+    const activity = trip!.activities.find(a => a.id === ticketsFor)
+    const label = activity?.place ?? 'Entrada'
+    const bp = processGoogleWalletLink(ticketLinkVal.trim(), label, tripId)
+    await addPass(user.uid, { ...bp, activityId: ticketsFor })
+    setTicketLinkVal('')
+    setTicketLinkMode(false)
+  }
+
+  const openTickets = (activityId: string) => {
+    setTicketsFor(activityId)
+    setTicketLinkMode(false)
+    setTicketLinkVal('')
+  }
+
   const f = (field: 'date' | 'city' | 'place' | 'type' | 'notes' | 'time' | 'url', val: string) =>
     setForm(p => ({ ...p, [field]: val }))
 
@@ -217,6 +259,18 @@ export function Activities() {
                           title="Agregar a gastos"
                         >
                           <CircleDollarSign size={14} />
+                        </button>
+                        <button
+                          onClick={() => openTickets(a.id)}
+                          className={`relative p-1.5 transition-colors ${activityPasses(a.id).length > 0 ? 'text-orange-500 dark:text-orange-400' : 'text-gray-400 hover:text-orange-500 dark:hover:text-orange-400'}`}
+                          title="Entradas"
+                        >
+                          <Ticket size={14} />
+                          {activityPasses(a.id).length > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-orange-500 text-white text-[8px] font-bold rounded-full flex items-center justify-center leading-none">
+                              {activityPasses(a.id).length}
+                            </span>
+                          )}
                         </button>
                         <button onClick={() => openEdit(a)} className="p-1.5 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"><Pencil size={14} /></button>
                         <button onClick={() => { if (confirm(`¿Eliminar "${a.place}"?`)) deleteActivity(tripId!, a.id) }} className="p-1.5 text-gray-400 hover:text-red-500"><Trash2 size={14} /></button>
@@ -390,6 +444,92 @@ export function Activities() {
           </div>
         </Modal>
       )}
+
+      {/* Hidden file input for ticket uploads */}
+      <input
+        ref={ticketFileRef}
+        type="file"
+        accept=".pkpass,image/*,.pdf"
+        className="hidden"
+        onChange={handleTicketFile}
+      />
+
+      {/* Tickets management modal */}
+      {ticketsFor && (() => {
+        const activity = trip.activities.find(a => a.id === ticketsFor)
+        const apasses = activityPasses(ticketsFor)
+        return (
+          <Modal title={`Entradas — ${activity?.place ?? ''}`} onClose={() => setTicketsFor(null)}>
+            <div className="space-y-3">
+              {apasses.length === 0 && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-3">Sin entradas cargadas</p>
+              )}
+              {apasses.map(p => {
+                const isPdf = p.img?.startsWith('data:application/pdf')
+                return (
+                  <div key={p.id} className="flex items-center gap-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl p-2">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center bg-gray-200 dark:bg-gray-600">
+                      {p.img && !isPdf && <img src={p.img} alt="" className="w-full h-full object-cover" />}
+                      {isPdf && <FileImage size={22} className="text-gray-500 dark:text-gray-300" />}
+                      {!p.img && <Ticket size={22} className="text-blue-400" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-800 dark:text-white truncate">{p.label}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        {isPdf ? 'PDF' : p.img ? 'Imagen' : p.value ? 'Código QR / barcode' : 'Enlace'}
+                      </p>
+                    </div>
+                    <button onClick={() => setViewingPass(p)} className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400" title="Ver">
+                      <ExternalLink size={15} />
+                    </button>
+                    <button onClick={() => user && removePass(user.uid, p.id)} className="p-1.5 text-gray-400 hover:text-red-500" title="Eliminar">
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                )
+              })}
+
+              <div className="flex gap-2 pt-1 border-t border-gray-100 dark:border-gray-700">
+                <button
+                  onClick={() => ticketFileRef.current?.click()}
+                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                >
+                  <FileImage size={15} />
+                  Subir archivo
+                </button>
+                <button
+                  onClick={() => setTicketLinkMode(p => !p)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${ticketLinkMode ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                >
+                  <Link2 size={15} />
+                  Enlace / QR
+                </button>
+              </div>
+
+              {ticketLinkMode && (
+                <div className="space-y-2">
+                  <input
+                    className={inputCls}
+                    placeholder="URL de Google Wallet, enlace de reserva o código QR..."
+                    value={ticketLinkVal}
+                    onChange={e => setTicketLinkVal(e.target.value)}
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleTicketLink}
+                    disabled={!ticketLinkVal.trim()}
+                    className="w-full bg-blue-600 text-white rounded-xl py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-40 transition-colors"
+                  >
+                    Agregar enlace
+                  </button>
+                </div>
+              )}
+            </div>
+          </Modal>
+        )
+      })()}
+
+      {viewingPass && <BoardingPassViewer bp={viewingPass} onClose={() => setViewingPass(null)} />}
     </div>
   )
 }
