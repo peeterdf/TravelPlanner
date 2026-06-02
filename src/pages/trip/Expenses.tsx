@@ -199,7 +199,7 @@ export function Expenses() {
                         ) : null
                       })()}
                       {e.reserved && (
-                        <span className="shrink-0 inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full">
+                        <span className="shrink-0 inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 px-1.5 py-0.5 rounded-full">
                           <CheckCircle2 size={11} /> Reservado
                         </span>
                       )}

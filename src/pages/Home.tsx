@@ -282,7 +282,7 @@ export function Home() {
                   <div className="flex items-center gap-2">
                     <h2 className="font-semibold text-gray-900 dark:text-white text-base truncate">{trip.name}</h2>
                     {trip.synced && (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded-full">
+                      <span className="shrink-0 inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 px-1.5 py-0.5 rounded-full">
                         <Cloud size={10} /> Sync
                       </span>
                     )}
@@ -321,13 +321,13 @@ export function Home() {
                 </div>
               </div>
               <div className="flex gap-3 mt-3 text-xs">
-                <span className="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
+                <span className="bg-blue-50 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
                   {trip.transports.length} tramos
                 </span>
-                <span className="bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
+                <span className="bg-green-50 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
                   {trip.accommodations.length} alojam.
                 </span>
-                <span className="bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full font-medium">
+                <span className="bg-orange-50 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full font-medium">
                   {trip.expenses.length} gastos
                 </span>
               </div>

@@ -13,7 +13,7 @@ export function ClaimTravelerModal({ travelers, onClaim, onSkip }: ClaimTraveler
       <div className="absolute inset-0 bg-black/40" />
       <div className="relative bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl p-5 w-full sm:max-w-sm shadow-xl">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
             <User size={20} className="text-blue-600 dark:text-blue-400" />
           </div>
           <div>
