@@ -112,12 +112,12 @@ export function TripDashboard() {
   const totalItems = trip.packingList.flatMap(c => c.items).length
 
   const sections = [
-    { label: 'Transportes', icon: Plane, to: 'transportes', value: `${trip.transports.length} tramos`, color: 'text-blue-600 bg-blue-50 dark:text-blue-400' },
-    { label: 'Itinerario', icon: Calendar, to: 'itinerario', value: `${trip.itinerary.length} días`, color: 'text-purple-600 bg-purple-50 dark:text-purple-400' },
-    { label: 'Alojamiento', icon: Building2, to: 'alojamiento', value: `${trip.accommodations.length} lugares`, color: 'text-green-600 bg-green-50 dark:text-green-400' },
-    { label: 'Gastos', icon: Wallet, to: 'gastos', value: privacyMode ? '••••' : `$${totalExpenses.toFixed(0)}`, color: 'text-orange-600 bg-orange-50 dark:text-orange-400' },
-    { label: 'Actividades', icon: Activity, to: 'actividades', value: `${trip.activities.length} actividades`, color: 'text-pink-600 bg-pink-50 dark:text-pink-400' },
-    { label: 'Checklist', icon: CheckSquare, to: 'checklist', value: `${checkedItems}/${totalItems}`, color: 'text-teal-600 bg-teal-50 dark:text-teal-400' },
+    { label: 'Transportes', icon: Plane, to: 'transportes', value: `${trip.transports.length} tramos`, color: 'icon-box-primary' },
+    { label: 'Itinerario', icon: Calendar, to: 'itinerario', value: `${trip.itinerary.length} días`, color: 'icon-box-purple' },
+    { label: 'Alojamiento', icon: Building2, to: 'alojamiento', value: `${trip.accommodations.length} lugares`, color: 'icon-box-success' },
+    { label: 'Gastos', icon: Wallet, to: 'gastos', value: privacyMode ? '••••' : `$${totalExpenses.toFixed(0)}`, color: 'icon-box-warning' },
+    { label: 'Actividades', icon: Activity, to: 'actividades', value: `${trip.activities.length} actividades`, color: 'icon-box-pink' },
+    { label: 'Checklist', icon: CheckSquare, to: 'checklist', value: `${checkedItems}/${totalItems}`, color: 'icon-box-teal' },
   ]
 
   const netBalance = calcNetBalance(trip)
@@ -192,7 +192,7 @@ export function TripDashboard() {
       </div>
 
       {/* Validation indicator */}
-      <div className={`rounded-2xl p-3 flex items-start gap-3 ${conflicts.length === 0 ? 'bg-green-50 text-green-700 dark:text-green-400' : 'bg-amber-50 text-amber-700 dark:text-amber-400'}`}>
+      <div className={`alert-box ${conflicts.length === 0 ? 'alert-success' : 'alert-warning'}`}>
         {conflicts.length === 0
           ? <><CheckCircle size={18} className="shrink-0 mt-0.5" /><span className="text-sm font-medium">Itinerario consistente con los transportes</span></>
           : (
@@ -222,11 +222,11 @@ export function TripDashboard() {
               <p className="text-xs text-gray-500 dark:text-gray-400">Total</p>
             </div>
             <div>
-              <p className="text-lg font-bold text-green-600 dark:text-green-400">{mask.amount(totalPaid)}</p>
+              <p className="text-lg font-bold text-success">{mask.amount(totalPaid)}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Pagado</p>
             </div>
             <div>
-              <p className={`text-lg font-bold ${remaining > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>{mask.amount(remaining)}</p>
+              <p className={`text-lg font-bold ${remaining > 0 ? 'text-danger' : 'text-success'}`}>{mask.amount(remaining)}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">Pendiente</p>
             </div>
           </div>
@@ -241,7 +241,7 @@ export function TripDashboard() {
             onClick={() => navigate(`/viaje/${tripId}/${to}`)}
             className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow active:scale-[0.99] text-left"
           >
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+            <div className={`icon-box-sm ${color}`}>
               <Icon size={20} />
             </div>
             <div className="min-w-0">
@@ -270,7 +270,7 @@ export function TripDashboard() {
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="font-medium text-gray-900 dark:text-white text-sm truncate">{mask.name(t.name)}</span>
                           {hasBalance && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 ${balance > 0 ? 'bg-green-100 text-green-700 dark:text-green-400' : 'bg-red-100 text-red-700 dark:text-red-400'}`}>
+                            <span className={`chip-sm ${balance > 0 ? 'chip-success' : 'chip-danger'}`}>
                               {balance > 0 ? `+${trip.currency} ${Math.abs(balance).toFixed(0)}` : `-${trip.currency} ${Math.abs(balance).toFixed(0)}`}
                             </span>
                           )}
@@ -284,7 +284,7 @@ export function TripDashboard() {
                         </button>
                       </div>
                       {removeError[t.id] && (
-                        <div className="flex items-start gap-2 bg-red-50 text-red-600 dark:text-red-400 text-xs rounded-lg px-3 py-2">
+                        <div className="alert-box alert-danger text-xs">
                           <span className="flex-1">{removeError[t.id]}</span>
                           <button onClick={() => setRemoveError(prev => { const n = { ...prev }; delete n[t.id]; return n })}>
                             <X size={12} />
@@ -340,7 +340,7 @@ export function TripDashboard() {
                 <DateInput className={inputCls} value={editEnd} onChange={v => { setEditEnd(v); setEditDateError('') }} />
               </div>
             </div>
-            {editDateError && <p className="text-xs text-red-500 dark:text-red-400">{editDateError}</p>}
+            {editDateError && <p className="text-xs text-danger">{editDateError}</p>}
             <div>
               <label className={labelCls}>Moneda</label>
               <div className="flex flex-wrap gap-2">

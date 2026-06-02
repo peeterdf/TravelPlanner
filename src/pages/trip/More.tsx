@@ -5,12 +5,12 @@ export function More() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
   const items = [
-    { icon: LayoutDashboard, label: 'Resumen del viaje', desc: 'Vista general y viajeros', to: 'dashboard', color: 'text-blue-600 bg-blue-50 dark:text-blue-400' },
-    { icon: Ticket, label: 'Pases de embarque', desc: 'Tus pkpass y QR personales', to: 'pases', color: 'text-violet-600 bg-violet-50 dark:text-violet-400' },
-    { icon: Star, label: 'Actividades', desc: 'Lugares y planes por día', to: 'actividades', color: 'text-pink-600 bg-pink-50 dark:text-pink-400' },
-    { icon: CheckSquare, label: 'Checklist equipaje', desc: 'Listas de packing por categoría', to: 'checklist', color: 'text-teal-600 bg-teal-50 dark:text-teal-400' },
-    { icon: FileText, label: 'Notas', desc: 'Direcciones, tips y recordatorios', to: 'notas', color: 'text-amber-600 bg-amber-50 dark:text-amber-400' },
-    { icon: ClipboardList, label: 'Auditoría', desc: 'Historial de cambios del viaje', to: 'auditoria', color: 'text-gray-600 bg-gray-100 dark:bg-gray-700 dark:text-gray-300' },
+    { icon: LayoutDashboard, label: 'Resumen del viaje', desc: 'Vista general y viajeros', to: 'dashboard', color: 'icon-box-primary' },
+    { icon: Ticket, label: 'Pases de embarque', desc: 'Tus pkpass y QR personales', to: 'pases', color: 'icon-box-violet' },
+    { icon: Star, label: 'Actividades', desc: 'Lugares y planes por día', to: 'actividades', color: 'icon-box-pink' },
+    { icon: CheckSquare, label: 'Checklist equipaje', desc: 'Listas de packing por categoría', to: 'checklist', color: 'icon-box-teal' },
+    { icon: FileText, label: 'Notas', desc: 'Direcciones, tips y recordatorios', to: 'notas', color: 'icon-box-amber' },
+    { icon: ClipboardList, label: 'Auditoría', desc: 'Historial de cambios del viaje', to: 'auditoria', color: 'icon-box-neutral' },
   ]
   return (
     <div className="p-4 space-y-3 pb-28">
@@ -20,7 +20,7 @@ export function More() {
           onClick={() => navigate(`/viaje/${tripId}/${to}`)}
           className="w-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-shadow active:scale-[0.99]"
         >
-          <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+          <div className={`icon-box ${color}`}>
             <Icon size={22} />
           </div>
           <div className="flex-1 text-left">

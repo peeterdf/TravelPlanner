@@ -1,0 +1,114 @@
+/* ── Clases semánticas por componente ────────────────────────────────────────
+   Los colores se controlan desde los archivos de tema (light/dark/warm.css).
+   Los componentes usan estas clases — nunca colores de Tailwind directamente.
+   ─────────────────────────────────────────────────────────────────────────── */
+@layer components {
+
+  /* ── Chips / Badges (pills de estado inline) ─────────────────────────── */
+
+  .chip {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+  .chip-sm {
+    @apply inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs;
+  }
+
+  .chip-primary { background-color: rgb(var(--color-blue-50));   color: rgb(var(--color-blue-700));   }
+  .chip-success { background-color: rgb(var(--color-green-50));  color: rgb(var(--color-green-700));  }
+  .chip-danger  { background-color: rgb(var(--color-red-50));    color: rgb(var(--color-red-700));    }
+  .chip-warning { background-color: rgb(var(--color-orange-50)); color: rgb(var(--color-orange-700)); }
+  .chip-neutral { background-color: rgb(var(--color-gray-100));  color: rgb(var(--color-gray-600));   }
+  .chip-purple  { background-color: rgb(var(--color-purple-50)); color: rgb(var(--color-purple-700)); }
+  .chip-pink    { background-color: rgb(var(--color-pink-50));   color: rgb(var(--color-pink-700));   }
+  .chip-teal    { background-color: rgb(var(--color-teal-50));   color: rgb(var(--color-teal-700));   }
+  .chip-amber   { background-color: rgb(var(--color-amber-50));  color: rgb(var(--color-amber-700));  }
+  .chip-cyan    { background-color: rgb(var(--color-cyan-100));  color: rgb(var(--color-cyan-700));   }
+
+  /* En dark/warm: texto más claro (usa -300 suaves definidos en dark.css) */
+  html.dark .chip-primary, html.warm .chip-primary { color: rgb(var(--color-blue-300));   }
+  html.dark .chip-success, html.warm .chip-success { color: rgb(var(--color-green-300));  }
+  html.dark .chip-danger,  html.warm .chip-danger  { color: rgb(var(--color-red-300));    }
+  html.dark .chip-warning, html.warm .chip-warning { color: rgb(var(--color-orange-300)); }
+  html.dark .chip-neutral, html.warm .chip-neutral { background-color: rgb(var(--color-gray-700)); color: rgb(var(--color-gray-400)); }
+  html.dark .chip-purple,  html.warm .chip-purple  { color: rgb(var(--color-purple-300)); }
+  html.dark .chip-pink,    html.warm .chip-pink    { color: rgb(var(--color-pink-300));   }
+  html.dark .chip-teal,    html.warm .chip-teal    { color: rgb(var(--color-teal-300));   }
+  html.dark .chip-amber,   html.warm .chip-amber   { color: rgb(var(--color-amber-300));  }
+  html.dark .chip-cyan,    html.warm .chip-cyan    { color: rgb(var(--color-cyan-300));   }
+
+
+  /* ── Icon boxes (contenedor cuadrado con ícono) ──────────────────────── */
+
+  .icon-box-sm { @apply w-10 h-10 rounded-xl flex items-center justify-center shrink-0; }
+  .icon-box    { @apply w-12 h-12 rounded-xl flex items-center justify-center shrink-0; }
+
+  .icon-box-primary { background-color: rgb(var(--color-blue-50));   color: rgb(var(--color-blue-600));   }
+  .icon-box-success { background-color: rgb(var(--color-green-50));  color: rgb(var(--color-green-600));  }
+  .icon-box-warning { background-color: rgb(var(--color-orange-50)); color: rgb(var(--color-orange-600)); }
+  .icon-box-danger  { background-color: rgb(var(--color-red-50));    color: rgb(var(--color-red-600));    }
+  .icon-box-purple  { background-color: rgb(var(--color-purple-50)); color: rgb(var(--color-purple-600)); }
+  .icon-box-pink    { background-color: rgb(var(--color-pink-50));   color: rgb(var(--color-pink-600));   }
+  .icon-box-teal    { background-color: rgb(var(--color-teal-50));   color: rgb(var(--color-teal-600));   }
+  .icon-box-amber   { background-color: rgb(var(--color-amber-50));  color: rgb(var(--color-amber-600));  }
+  .icon-box-violet  { background-color: rgb(var(--color-violet-50)); color: rgb(var(--color-violet-600)); }
+  .icon-box-neutral { background-color: rgb(var(--color-gray-100));  color: rgb(var(--color-gray-600));   }
+
+  html.dark .icon-box-primary, html.warm .icon-box-primary { color: rgb(var(--color-blue-400));   }
+  html.dark .icon-box-success, html.warm .icon-box-success { color: rgb(var(--color-green-400));  }
+  html.dark .icon-box-warning, html.warm .icon-box-warning { color: rgb(var(--color-orange-400)); }
+  html.dark .icon-box-danger,  html.warm .icon-box-danger  { color: rgb(var(--color-red-400));    }
+  html.dark .icon-box-purple,  html.warm .icon-box-purple  { color: rgb(var(--color-purple-400)); }
+  html.dark .icon-box-pink,    html.warm .icon-box-pink    { color: rgb(var(--color-pink-400));   }
+  html.dark .icon-box-teal,    html.warm .icon-box-teal    { color: rgb(var(--color-teal-400));   }
+  html.dark .icon-box-amber,   html.warm .icon-box-amber   { color: rgb(var(--color-amber-400));  }
+  html.dark .icon-box-violet,  html.warm .icon-box-violet  { color: rgb(var(--color-violet-400)); }
+  html.dark .icon-box-neutral, html.warm .icon-box-neutral { background-color: rgb(var(--color-gray-700)); color: rgb(var(--color-gray-400)); }
+
+
+  /* ── Activity status chips (chip with border, used in Activities list) ─ */
+
+  .chip-status-pending { border-color: rgb(var(--color-gray-300));  color: rgb(var(--color-gray-600));  }
+  .chip-status-booked  { background-color: rgb(var(--color-blue-50));  border-color: rgb(var(--color-blue-300));  color: rgb(var(--color-blue-700));  }
+  .chip-status-done    { background-color: rgb(var(--color-green-50)); border-color: rgb(var(--color-green-300)); color: rgb(var(--color-green-700)); }
+
+  html.dark .chip-status-pending, html.warm .chip-status-pending { border-color: rgb(var(--color-gray-600));  color: rgb(var(--color-gray-300));  }
+  html.dark .chip-status-booked,  html.warm .chip-status-booked  { border-color: rgb(var(--color-blue-700));  color: rgb(var(--color-blue-300));  }
+  html.dark .chip-status-done,    html.warm .chip-status-done    { border-color: rgb(var(--color-green-700)); color: rgb(var(--color-green-300)); }
+
+
+  /* ── Alert boxes (contenedor de estado, más grande) ──────────────────── */
+
+  .alert-box     { @apply rounded-2xl p-3 flex items-start gap-3; }
+  .alert-success { background-color: rgb(var(--color-green-50));  color: rgb(var(--color-green-700));  }
+  .alert-warning { background-color: rgb(var(--color-amber-50));  color: rgb(var(--color-amber-700));  }
+  .alert-danger  { background-color: rgb(var(--color-red-50));    color: rgb(var(--color-red-600));    }
+
+  html.dark .alert-success, html.warm .alert-success { color: rgb(var(--color-green-300));  }
+  html.dark .alert-warning, html.warm .alert-warning { color: rgb(var(--color-amber-300));  }
+  html.dark .alert-danger,  html.warm .alert-danger  { color: rgb(var(--color-red-300));    }
+
+
+  /* ── FAB (botón flotante de acción principal) ────────────────────────── */
+
+  .fab-primary {
+    @apply fixed bottom-20 right-4 z-30 rounded-full w-14 h-14
+           flex items-center justify-center shadow-lg
+           active:scale-95 transition-all;
+    background-color: rgb(var(--color-blue-600));
+    color: white;
+  }
+  .fab-primary:hover { background-color: rgb(var(--color-blue-700)); }
+
+
+  /* ── Semantic text colors (for inline financial/status values) ────────── */
+
+  .text-success { color: rgb(var(--color-green-600)); }
+  .text-danger  { color: rgb(var(--color-red-600));   }
+  .text-primary { color: rgb(var(--color-blue-600));  }
+  .text-muted   { color: rgb(var(--color-gray-400));  }
+
+  html.dark .text-success, html.warm .text-success { color: rgb(var(--color-green-300)); }
+  html.dark .text-danger,  html.warm .text-danger  { color: rgb(var(--color-red-300));   }
+  html.dark .text-primary, html.warm .text-primary { color: rgb(var(--color-blue-300));  }
+
+}

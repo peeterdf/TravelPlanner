@@ -81,10 +81,8 @@ export function Packing() {
                 <span className="font-semibold text-gray-900 dark:text-white truncate">{cat.name}</span>
               </button>
               <div className="flex items-center gap-2 shrink-0">
-                <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${
-                  checked === total && total > 0
-                    ? 'bg-green-100 text-green-700 dark:text-green-400'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+                <span className={`chip ${
+                  checked === total && total > 0 ? 'chip-success' : 'chip-neutral'
                 }`}>
                   {checked}/{total}
                 </span>

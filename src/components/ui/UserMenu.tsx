@@ -76,7 +76,7 @@ export function UserMenu({ variant = 'dark' }: UserMenuProps) {
             <button
               onClick={handleSignOut}
               disabled={busy}
-              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors disabled:opacity-40"
+              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm text-danger hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors disabled:opacity-40"
             >
               {busy ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
               Cerrar sesión

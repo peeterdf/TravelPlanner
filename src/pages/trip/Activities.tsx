@@ -25,9 +25,9 @@ const STATUS_CYCLE: Record<ActivityStatus, ActivityStatus> = {
 }
 
 const STATUS_CONFIG: Record<ActivityStatus, { icon: React.ElementType; color: string; label: string; bg: string }> = {
-  pendiente: { icon: Circle,       color: 'text-gray-400 dark:text-gray-500', label: 'Pendiente', bg: 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300' },
-  reservada: { icon: Ticket,       color: 'text-blue-500 dark:text-blue-400',  label: 'Reservada', bg: 'bg-blue-50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400' },
-  realizada: { icon: CheckCircle2, color: 'text-green-500',                    label: 'Realizada', bg: 'bg-green-50 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400' },
+  pendiente: { icon: Circle,       color: 'text-gray-400 dark:text-gray-500', label: 'Pendiente', bg: 'chip-status-pending' },
+  reservada: { icon: Ticket,       color: 'text-blue-500 dark:text-blue-400',  label: 'Reservada', bg: 'chip-status-booked' },
+  realizada: { icon: CheckCircle2, color: 'text-green-500 dark:text-green-300', label: 'Realizada', bg: 'chip-status-done' },
 }
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
@@ -229,7 +229,7 @@ export function Activities() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className={`font-medium text-gray-900 dark:text-white text-sm ${isRealizada ? 'line-through' : ''}`}>{a.place}</p>
                           {a.type && (
-                            <span className="text-xs bg-purple-50 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">{a.type}</span>
+                            <span className="chip chip-purple">{a.type}</span>
                           )}
                           <span className={`text-xs px-2 py-0.5 rounded-full border ${cfg.bg}`}>{cfg.label}</span>
                         </div>
@@ -287,7 +287,7 @@ export function Activities() {
       {sorted.length > 0 && (
         <button
           onClick={openAdd}
-          className="fixed bottom-20 right-4 z-30 bg-blue-600 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg hover:bg-blue-700 active:scale-95"
+          className="fab-primary"
         >
           <Plus size={24} />
         </button>
