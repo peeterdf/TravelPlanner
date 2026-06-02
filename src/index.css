@@ -17,12 +17,53 @@
     background-color: #030712;
     color: #f9fafb;
   }
+  html.warm body {
+    background-color: #1B2632;
+    color: #EEE9DF;
+  }
   #root {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
   }
 }
+
+/* ── Warm theme overrides ──────────────────────────────────────────────────── */
+/* Backgrounds */
+html.warm .dark\:bg-gray-950 { background-color: #141E27; }
+html.warm .dark\:bg-gray-900 { background-color: #1B2632; }
+html.warm .dark\:bg-gray-800 { background-color: #2C3B4D; }
+html.warm .dark\:bg-gray-700 { background-color: #374A5C; }
+html.warm .dark\:bg-gray-600 { background-color: #4A6070; }
+html.warm .dark\:bg-gray-800\/50 { background-color: rgb(44 59 77 / 0.5); }
+html.warm .dark\:bg-gray-700\/50 { background-color: rgb(55 74 92 / 0.5); }
+
+/* Text */
+html.warm .dark\:text-white   { color: #EEE9DF; }
+html.warm .dark\:text-gray-100 { color: #EEE9DF; }
+html.warm .dark\:text-gray-200 { color: #E0DAD0; }
+html.warm .dark\:text-gray-300 { color: #C9C1B1; }
+html.warm .dark\:text-gray-400 { color: #B5ACA0; }
+html.warm .dark\:text-gray-500 { color: #9A9288; }
+
+/* Borders */
+html.warm .dark\:border-gray-800 { border-color: #243141; }
+html.warm .dark\:border-gray-700 { border-color: #3A4E60; }
+html.warm .dark\:border-gray-600 { border-color: #4A6070; }
+
+/* Placeholders */
+html.warm .dark\:placeholder-gray-400::placeholder { color: #B5ACA0; }
+
+/* Accent — swap blue tones to warm orange on hover/text indicators */
+html.warm .dark\:text-blue-400  { color: #FFB162; }
+html.warm .dark\:hover\:text-blue-400:hover { color: #FFB162; }
+html.warm .dark\:text-blue-300  { color: #FFB162; }
+html.warm .dark\:border-blue-800 { border-color: #7A3A22; }
+html.warm .dark\:bg-blue-900\/20 { background-color: rgb(122 58 34 / 0.2); }
+
+/* Scrollbar (optional) */
+html.warm ::-webkit-scrollbar-track { background: #1B2632; }
+html.warm ::-webkit-scrollbar-thumb { background: #374A5C; border-radius: 4px; }
 
 @layer utilities {
   .safe-bottom {

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload, Sun, Moon, Monitor, Eye, EyeOff, Cloud, CloudUpload, UserPlus, Copy, Check } from 'lucide-react'
+import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload, Sun, Moon, Monitor, Flame, Eye, EyeOff, Cloud, CloudUpload, UserPlus, Copy, Check } from 'lucide-react'
 import { useTripsStore } from '../store/tripsStore'
 import { useSettingsStore, useMask } from '../store/settingsStore'
 import { useAuthStore } from '../store/authStore'
@@ -229,9 +229,9 @@ export function Home() {
               onClick={cycleTheme}
               className="p-2 text-blue-200 hover:text-white transition-colors"
               aria-label={`Tema: ${theme}`}
-              title={theme === 'light' ? 'Claro' : theme === 'dark' ? 'Oscuro' : 'Sistema'}
+              title={theme === 'light' ? 'Claro' : theme === 'dark' ? 'Oscuro' : theme === 'warm' ? 'Cálido' : 'Sistema'}
             >
-              {theme === 'light' ? <Sun size={18} /> : theme === 'dark' ? <Moon size={18} /> : <Monitor size={18} />}
+              {theme === 'light' ? <Sun size={18} /> : theme === 'dark' ? <Moon size={18} /> : theme === 'warm' ? <Flame size={18} /> : <Monitor size={18} />}
             </button>
             <button
               onClick={togglePrivacy}
