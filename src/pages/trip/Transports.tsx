@@ -252,7 +252,7 @@ export function Transports() {
               <label className={labelCls}>Link de reserva</label>
               <input type="url" className={inputCls} placeholder="https://www.ryanair.com/..." value={form.url} onChange={e => f('url', e.target.value)} />
             </div>
-            {formError && <p className="text-xs text-red-500 dark:text-red-400">{formError}</p>}
+            {formError && <p className="text-xs text-danger">{formError}</p>}
             {modal === 'add' && (
               <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer select-none">

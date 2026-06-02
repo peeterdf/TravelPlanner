@@ -154,11 +154,11 @@ export function Expenses() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Pagado</p>
-                <p className="font-bold text-green-600 dark:text-green-400 text-sm">{ct.currency} {mask.amount2(ct.paid)}</p>
+                <p className="font-bold text-success text-sm">{ct.currency} {mask.amount2(ct.paid)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">Pendiente</p>
-                <p className={`font-bold text-sm ${ct.remaining > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
+                <p className={`font-bold text-sm ${ct.remaining > 0 ? 'text-danger' : 'text-success'}`}>
                   {ct.currency} {mask.amount2(ct.remaining)}
                 </p>
               </div>
@@ -199,7 +199,7 @@ export function Expenses() {
                         ) : null
                       })()}
                       {e.reserved && (
-                        <span className="shrink-0 inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 px-1.5 py-0.5 rounded-full">
+                        <span className="chip-sm chip-success shrink-0">
                           <CheckCircle2 size={11} /> Reservado
                         </span>
                       )}
@@ -208,9 +208,9 @@ export function Expenses() {
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
                       {e.date && <span>{fmtDate(e.date)}</span>}
                       <span className="text-gray-900 dark:text-white font-medium">{e.currency} {mask.amount2(e.price)}</span>
-                      {e.paid > 0 && <span className="text-green-600 dark:text-green-400">Pag: {mask.amount2(e.paid)}</span>}
+                      {e.paid > 0 && <span className="text-success">Pag: {mask.amount2(e.paid)}</span>}
                       {e.paidBy && (
-                        <span className="text-blue-600 dark:text-blue-400 font-medium">Pagó {mask.name(e.paidBy)}</span>
+                        <span className="text-primary font-medium">Pagó {mask.name(e.paidBy)}</span>
                       )}
                     </div>
                   </div>
@@ -243,7 +243,7 @@ export function Expenses() {
                   {Object.entries(netBalance).sort((a, b) => b[1] - a[1]).map(([person, net]) => (
                     <div key={person} className="flex items-center justify-between">
                       <span className="font-medium text-gray-900 dark:text-white text-sm">{mask.name(person)}</span>
-                      <span className={`text-xs font-medium ${net > 0.5 ? 'text-green-600 dark:text-green-400' : net < -0.5 ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`}>
+                      <span className={`text-xs font-medium ${net > 0.5 ? 'text-success' : net < -0.5 ? 'text-danger' : 'text-muted'}`}>
                         {net > 0.5 ? `le deben ${mask.amount(net)}` : net < -0.5 ? `debe ${mask.amount(Math.abs(net))}` : '✓ par'}
                       </span>
                     </div>
@@ -380,7 +380,7 @@ export function Expenses() {
               </div>
             )}
 
-            {paidError && <p className="text-xs text-red-500 dark:text-red-400">{paidError}</p>}
+            {paidError && <p className="text-xs text-danger">{paidError}</p>}
             <button onClick={handleSave} disabled={!form.concept.trim()}
               className="w-full bg-blue-600 text-white rounded-xl py-3 font-semibold text-sm hover:bg-blue-700 disabled:opacity-40 transition-colors">
               {modal === 'add' ? 'Agregar' : 'Guardar cambios'}

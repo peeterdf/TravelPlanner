@@ -179,8 +179,8 @@ export function AuthModal({ onClose }: AuthModalProps) {
           )}
 
           {/* Feedback */}
-          {error && <p className="text-sm text-red-500 dark:text-red-400">{error}</p>}
-          {success && <p className="text-sm text-green-600 dark:text-green-400">{success}</p>}
+          {error && <p className="text-sm text-danger">{error}</p>}
+          {success && <p className="text-sm text-success">{success}</p>}
 
           {/* Submit */}
           <button

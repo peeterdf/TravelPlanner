@@ -104,7 +104,7 @@ export function Accommodations() {
             <div className="p-4">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-gray-900 dark:text-white">{a.city}</h3>
-                <span className="text-xs bg-blue-50 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
+                <span className="chip chip-primary">
                   {a.checkInDate ? `${fmtDate(a.checkInDate)} · ` : ''}{a.nights} noche{a.nights !== 1 ? 's' : ''}
                 </span>
               </div>

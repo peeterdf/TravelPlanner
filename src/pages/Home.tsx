@@ -282,7 +282,7 @@ export function Home() {
                   <div className="flex items-center gap-2">
                     <h2 className="font-semibold text-gray-900 dark:text-white text-base truncate">{trip.name}</h2>
                     {trip.synced && (
-                      <span className="shrink-0 inline-flex items-center gap-1 text-xs text-green-600 dark:text-green-400 bg-green-50 px-1.5 py-0.5 rounded-full">
+                      <span className="chip-sm chip-success shrink-0">
                         <Cloud size={10} /> Sync
                       </span>
                     )}
@@ -305,7 +305,7 @@ export function Home() {
                     <button
                       onClick={(e) => handleSync(e, trip)}
                       disabled={syncingId === trip.id}
-                      className={`p-2 transition-colors disabled:opacity-40 ${trip.synced ? 'text-green-500 dark:text-green-400' : 'text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'}`}
+                      className={`p-2 transition-colors disabled:opacity-40 ${trip.synced ? 'text-success' : 'text-gray-400 hover:text-blue-500 dark:hover:text-blue-400'}`}
                       aria-label={trip.synced ? 'Ver código de sincronización' : 'Sincronizar en la nube'}
                     >
                       {trip.synced ? <Cloud size={17} /> : <CloudUpload size={17} />}
@@ -321,13 +321,13 @@ export function Home() {
                 </div>
               </div>
               <div className="flex gap-3 mt-3 text-xs">
-                <span className="bg-blue-50 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full font-medium">
+                <span className="chip chip-primary">
                   {trip.transports.length} tramos
                 </span>
-                <span className="bg-green-50 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
+                <span className="chip chip-success">
                   {trip.accommodations.length} alojam.
                 </span>
-                <span className="bg-orange-50 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full font-medium">
+                <span className="chip chip-warning">
                   {trip.expenses.length} gastos
                 </span>
               </div>
@@ -419,7 +419,7 @@ export function Home() {
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del viaje *</label>
               <input className={inputCls} placeholder="Ej: Europa 2024" value={name} onChange={e => { setName(e.target.value); setNameError('') }} autoFocus />
-              {nameError && <p className="text-xs text-red-500 dark:text-red-400 mt-1">{nameError}</p>}
+              {nameError && <p className="text-xs text-danger mt-1">{nameError}</p>}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -431,7 +431,7 @@ export function Home() {
                 <DateInput className={inputCls} value={endDate} onChange={v => { setEndDate(v); setDateError('') }} />
               </div>
             </div>
-            {dateError && <p className="text-xs text-red-500 dark:text-red-400">{dateError}</p>}
+            {dateError && <p className="text-xs text-danger">{dateError}</p>}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Viajeros (separados por coma)</label>
               <input className={inputCls} placeholder="Ej: Ana, Bruno, Clara" value={travelersRaw} onChange={e => setTravelersRaw(e.target.value)} />
@@ -475,7 +475,7 @@ export function Home() {
                 {copied ? <Check size={16} /> : <Copy size={16} />}
               </button>
             </div>
-            {copied && <p className="text-xs text-green-600 dark:text-green-400 text-center">¡Copiado!</p>}
+            {copied && <p className="text-xs text-success text-center">¡Copiado!</p>}
           </div>
         </Modal>
       )}

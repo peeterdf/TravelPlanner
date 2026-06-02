@@ -22,9 +22,20 @@ html.dark {
   --color-gray-900:  17  24  39;
   --color-gray-950:   3   7  18;
 
-  /* Blue — tintes pre-mezclados sobre card (17 24 39) */
+  /* Blue — tintes pre-mezclados + -300 suave para texto de chips */
   --color-blue-50:   21  34  68;  /* ≈ blue-900/30  */
   --color-blue-100:  20  31  59;  /* ≈ blue-900/20  */
+  --color-blue-300:  120 170 230;
+
+  /* -300 suaves para texto de chips/badges en dark (menos saturados que Tailwind) */
+  --color-green-300:  110 200 120;
+  --color-red-300:    220 130 130;
+  --color-orange-300: 220 160  90;
+  --color-amber-300:  200 170  80;
+  --color-purple-300: 170 140 220;
+  --color-pink-300:   210 130 175;
+  --color-teal-300:    80 190 175;
+  --color-cyan-300:    80 190 210;
 
   /* Indigo — mismos tintes */
   --color-indigo-50:  21  34  68;
