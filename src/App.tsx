@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { Share2, Sun, Moon, Monitor, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Share2, Sun, Moon, Monitor, Flame, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useTripsStore } from './store/tripsStore'
 import { useSettingsStore } from './store/settingsStore'
 import { useAuthStore } from './store/authStore'
@@ -93,9 +93,9 @@ function TripLayout() {
               onClick={cycleTheme}
               className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
               aria-label={`Tema: ${theme}`}
-              title={theme === 'light' ? 'Claro' : theme === 'dark' ? 'Oscuro' : 'Sistema'}
+              title={theme === 'light' ? 'Claro' : theme === 'dark' ? 'Oscuro' : theme === 'warm' ? 'Cálido' : 'Sistema'}
             >
-              {theme === 'light' ? <Sun size={18} /> : theme === 'dark' ? <Moon size={18} /> : <Monitor size={18} />}
+              {theme === 'light' ? <Sun size={18} /> : theme === 'dark' ? <Moon size={18} /> : theme === 'warm' ? <Flame size={18} /> : <Monitor size={18} />}
             </button>
             <button
               onClick={togglePrivacy}
@@ -156,13 +156,19 @@ function AppLoader() {
 function ThemeApplier() {
   const { theme } = useSettingsStore()
   useEffect(() => {
+    const el = document.documentElement
+    if (theme === 'warm') {
+      el.classList.add('dark', 'warm')
+      return
+    }
+    el.classList.remove('warm')
     if (theme !== 'system') {
-      document.documentElement.classList.toggle('dark', theme === 'dark')
+      el.classList.toggle('dark', theme === 'dark')
       return
     }
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
-    document.documentElement.classList.toggle('dark', mq.matches)
-    const handler = (e: MediaQueryListEvent) => document.documentElement.classList.toggle('dark', e.matches)
+    el.classList.toggle('dark', mq.matches)
+    const handler = (e: MediaQueryListEvent) => el.classList.toggle('dark', e.matches)
     mq.addEventListener('change', handler)
     return () => mq.removeEventListener('change', handler)
   }, [theme])

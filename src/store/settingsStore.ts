@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type Theme = 'light' | 'dark' | 'system'
+export type Theme = 'light' | 'dark' | 'warm' | 'system'
 
 interface SettingsState {
   theme: Theme
@@ -13,7 +13,7 @@ interface SettingsState {
 const loadTheme = (): Theme => {
   try {
     const v = localStorage.getItem('theme')
-    if (v === 'light' || v === 'dark' || v === 'system') return v
+    if (v === 'light' || v === 'dark' || v === 'warm' || v === 'system') return v
     // migrate old darkMode key
     const old = localStorage.getItem('darkMode')
     return old === 'false' ? 'light' : 'dark'
@@ -27,7 +27,7 @@ const loadBool = (key: string, def = false): boolean => {
   } catch { return def }
 }
 
-const CYCLE: Theme[] = ['light', 'dark', 'system']
+const CYCLE: Theme[] = ['light', 'dark', 'warm', 'system']
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   theme: loadTheme(),
@@ -37,7 +37,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     set({ theme })
   },
   cycleTheme: () => {
-    const next = CYCLE[(CYCLE.indexOf(get().theme) + 1) % 3]
+    const next = CYCLE[(CYCLE.indexOf(get().theme) + 1) % CYCLE.length]
     localStorage.setItem('theme', next)
     set({ theme: next })
   },
