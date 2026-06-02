@@ -1,15 +1,14 @@
-/* ── Light theme ─────────────────────────────────────────────────────────────
-   Valores estándar de Tailwind. Editar aquí para cambiar el tema claro.
-   Formato: triplets RGB sin rgb(), ej: "59 130 246"
-   (necesario para que funcionen las opacidades: bg-blue-600/30)
+/* ── Light theme — fuente de verdad ──────────────────────────────────────────
+   Define TODOS los colores. Dark y Warm solo sobreescriben lo que cambia.
+   Formato: triplets RGB, ej: "59 130 246" (soporta opacidades: /30, /50)
    ─────────────────────────────────────────────────────────────────────────── */
 :root {
+  /* ── Colores de body ─────────────────────────────────────── */
   --color-body-bg:   249 250 251;
   --color-body-text:  17  24  39;
+  --color-white:     255 255 255;
 
-  --color-white: 255 255 255;
-
-  /* Gray */
+  /* ── Neutral / Gray ──────────────────────────────────────── */
   --color-gray-50:  249 250 251;
   --color-gray-100: 243 244 246;
   --color-gray-200: 229 231 235;
@@ -22,19 +21,19 @@
   --color-gray-900:  17  24  39;
   --color-gray-950:   3   7  18;
 
-  /* Blue */
+  /* ── Primary / Accent (blue) ─────────────────────────────── */
   --color-blue-50:  239 246 255;
   --color-blue-100: 219 234 254;
   --color-blue-200: 191 219 254;
   --color-blue-300: 147 197 253;
   --color-blue-400:  96 165 250;
   --color-blue-500:  59 130 246;
-  --color-blue-600:  37  99 235;
-  --color-blue-700:  29  78 216;
+  --color-blue-600:  37  99 235;   /* botón primario, links */
+  --color-blue-700:  29  78 216;   /* hover */
   --color-blue-800:  30  64 175;
   --color-blue-900:  30  58 138;
 
-  /* Indigo */
+  /* ── Indigo (alias de blue en esta app) ──────────────────── */
   --color-indigo-50:  238 242 255;
   --color-indigo-100: 224 231 255;
   --color-indigo-200: 199 210 254;
@@ -46,7 +45,7 @@
   --color-indigo-800:  55  48 163;
   --color-indigo-900:  49  46 129;
 
-  /* Green */
+  /* ── Success (green) ─────────────────────────────────────── */
   --color-green-50:  240 253 244;
   --color-green-100: 220 252 231;
   --color-green-200: 187 247 208;
@@ -58,7 +57,7 @@
   --color-green-800:  22 101  52;
   --color-green-900:  20  83  45;
 
-  /* Red */
+  /* ── Danger (red) ────────────────────────────────────────── */
   --color-red-50:  254 242 242;
   --color-red-100: 254 226 226;
   --color-red-200: 254 202 202;
@@ -70,7 +69,7 @@
   --color-red-800: 153  27  27;
   --color-red-900: 127  29  29;
 
-  /* Orange */
+  /* ── Warning (orange) ────────────────────────────────────── */
   --color-orange-50:  255 247 237;
   --color-orange-100: 255 237 213;
   --color-orange-200: 254 215 170;
@@ -82,7 +81,8 @@
   --color-orange-800: 154  52  18;
   --color-orange-900: 124  45  18;
 
-  /* Purple */
+  /* ── Category colors (no cambian entre temas) ────────────── */
+
   --color-purple-50:  250 245 255;
   --color-purple-100: 243 232 255;
   --color-purple-200: 233 213 255;
@@ -94,7 +94,6 @@
   --color-purple-800: 107  33 168;
   --color-purple-900:  88  28 135;
 
-  /* Pink */
   --color-pink-50:  253 242 248;
   --color-pink-100: 252 231 243;
   --color-pink-200: 251 207 232;
@@ -106,7 +105,6 @@
   --color-pink-800: 157  23  77;
   --color-pink-900: 131  24  67;
 
-  /* Amber */
   --color-amber-50:  255 251 235;
   --color-amber-100: 254 243 199;
   --color-amber-200: 253 230 138;
@@ -118,7 +116,6 @@
   --color-amber-800: 146  64  14;
   --color-amber-900: 120  53  15;
 
-  /* Teal */
   --color-teal-50:  240 253 250;
   --color-teal-100: 204 251 241;
   --color-teal-200: 153 246 228;
@@ -130,7 +127,6 @@
   --color-teal-800:  17  94  89;
   --color-teal-900:  19  78  74;
 
-  /* Yellow */
   --color-yellow-50:  254 252 232;
   --color-yellow-100: 254 249 195;
   --color-yellow-200: 254 240 138;
@@ -142,7 +138,6 @@
   --color-yellow-800: 133  77  14;
   --color-yellow-900: 113  63  18;
 
-  /* Violet */
   --color-violet-50:  245 243 255;
   --color-violet-100: 237 233 254;
   --color-violet-200: 221 214 254;
@@ -154,7 +149,6 @@
   --color-violet-800:  91  33 182;
   --color-violet-900:  76  29 149;
 
-  /* Cyan */
   --color-cyan-50:  236 254 255;
   --color-cyan-100: 207 250 254;
   --color-cyan-200: 165 243 252;
