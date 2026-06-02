@@ -1,31 +1,30 @@
 /** @type {import('tailwindcss').Config} */
+
+const SCALE = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900]
+const cssVar = name => Object.fromEntries(
+  SCALE.map(n => [n, `rgb(var(--color-${name}-${n}) / <alpha-value>)`])
+)
+
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        white: 'rgb(var(--color-white) / <alpha-value>)',
-        gray: Object.fromEntries(
-          [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map(n => [
-            n,
-            `rgb(var(--color-gray-${n}) / <alpha-value>)`,
-          ])
-        ),
-        blue: Object.fromEntries(
-          [50, 100, 200, 300, 400, 500, 600, 700, 800, 900].map(n => [
-            n,
-            `rgb(var(--color-blue-${n}) / <alpha-value>)`,
-          ])
-        ),
-        indigo: {
-          50:  'rgb(var(--color-indigo-50) / <alpha-value>)',
-          200: 'rgb(var(--color-indigo-200) / <alpha-value>)',
-          400: 'rgb(var(--color-indigo-400) / <alpha-value>)',
-          500: 'rgb(var(--color-indigo-500) / <alpha-value>)',
-          600: 'rgb(var(--color-indigo-600) / <alpha-value>)',
-          700: 'rgb(var(--color-indigo-700) / <alpha-value>)',
-        },
+        white:  'rgb(var(--color-white) / <alpha-value>)',
+        gray:   { ...cssVar('gray'), 950: 'rgb(var(--color-gray-950) / <alpha-value>)' },
+        blue:   cssVar('blue'),
+        indigo: cssVar('indigo'),
+        green:  cssVar('green'),
+        red:    cssVar('red'),
+        orange: cssVar('orange'),
+        purple: cssVar('purple'),
+        pink:   cssVar('pink'),
+        amber:  cssVar('amber'),
+        teal:   cssVar('teal'),
+        yellow: cssVar('yellow'),
+        violet: cssVar('violet'),
+        cyan:   cssVar('cyan'),
       },
     },
   },

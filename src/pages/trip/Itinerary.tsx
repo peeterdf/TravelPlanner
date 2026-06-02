@@ -7,13 +7,13 @@ import { format, eachDayOfInterval, startOfWeek, parseISO, addDays } from 'date-
 import { Calendar, AlertTriangle, Moon, ChevronRight, Plane, Star } from 'lucide-react'
 
 const DAY_COLORS = [
-  'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800',
-  'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800',
-  'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800',
-  'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800',
-  'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800',
-  'bg-pink-50 dark:bg-pink-900/30 border-pink-200 dark:border-pink-800',
-  'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800',
+  'bg-blue-50 border-blue-200 dark:border-blue-800',
+  'bg-green-50 border-green-200 dark:border-green-800',
+  'bg-orange-50 border-orange-200 dark:border-orange-800',
+  'bg-purple-50 border-purple-200 dark:border-purple-800',
+  'bg-yellow-50 border-yellow-200 dark:border-yellow-800',
+  'bg-pink-50 border-pink-200 dark:border-pink-800',
+  'bg-red-50 border-red-200 dark:border-red-800',
 ]
 
 const DAY_NAMES = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
@@ -165,7 +165,7 @@ export function Itinerary() {
       {/* Conflicts */}
       {conflicts.length > 0 && (
         <div className="px-4 pt-3">
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-3">
+          <div className="bg-amber-50 border border-amber-200 dark:border-amber-800 rounded-2xl p-3">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 mb-2">
               <AlertTriangle size={16} />
               <span className="text-sm font-semibold">Inconsistencias con transportes</span>

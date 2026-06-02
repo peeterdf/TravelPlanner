@@ -154,7 +154,7 @@ export function BoardingPasses() {
       ) : myPasses.length > 0 ? (
         myPasses.map(bp => (
           <div key={bp.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
               <Ticket size={20} className="text-blue-600 dark:text-blue-400" />
             </div>
             <div className="flex-1 min-w-0">

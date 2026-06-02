@@ -26,8 +26,8 @@ const STATUS_CYCLE: Record<ActivityStatus, ActivityStatus> = {
 
 const STATUS_CONFIG: Record<ActivityStatus, { icon: React.ElementType; color: string; label: string; bg: string }> = {
   pendiente: { icon: Circle,       color: 'text-gray-400 dark:text-gray-500', label: 'Pendiente', bg: 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300' },
-  reservada: { icon: Ticket,       color: 'text-blue-500 dark:text-blue-400',  label: 'Reservada', bg: 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400' },
-  realizada: { icon: CheckCircle2, color: 'text-green-500',                    label: 'Realizada', bg: 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400' },
+  reservada: { icon: Ticket,       color: 'text-blue-500 dark:text-blue-400',  label: 'Reservada', bg: 'bg-blue-50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400' },
+  realizada: { icon: CheckCircle2, color: 'text-green-500',                    label: 'Realizada', bg: 'bg-green-50 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400' },
 }
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
@@ -229,7 +229,7 @@ export function Activities() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className={`font-medium text-gray-900 dark:text-white text-sm ${isRealizada ? 'line-through' : ''}`}>{a.place}</p>
                           {a.type && (
-                            <span className="text-xs bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">{a.type}</span>
+                            <span className="text-xs bg-purple-50 text-purple-600 dark:text-purple-400 px-2 py-0.5 rounded-full">{a.type}</span>
                           )}
                           <span className={`text-xs px-2 py-0.5 rounded-full border ${cfg.bg}`}>{cfg.label}</span>
                         </div>
@@ -499,7 +499,7 @@ export function Activities() {
                 </button>
                 <button
                   onClick={() => setTicketLinkMode(p => !p)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${ticketLinkMode ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
+                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm border transition-colors ${ticketLinkMode ? 'bg-blue-50 border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-400' : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}
                 >
                   <Link2 size={15} />
                   Enlace / QR
