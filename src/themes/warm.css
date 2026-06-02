@@ -1,38 +1,41 @@
-/* ── Warm theme ──────────────────────────────────────────────────────────────
-   Fondos: slate azulado oscuro. Accent: rust/naranja reemplaza al azul.
-   Colores semánticos (green, red, etc.) mantienen su identidad pero con
-   -50 y -100 pre-mezclados sobre la superficie cálida para tintes sutiles.
+/* ── Warm theme — solo overrides ─────────────────────────────────────────────
+   Solo se definen los valores que CAMBIAN respecto a light.css.
+   El resto hereda automáticamente por cascade de :root.
+
+   Qué cambia:
+   · Gray       → slate azulado oscuro
+   · Blue/Indigo → rust/naranja (#A35139, #FFB162)
+   · Status colors (-50 y -100) → pre-mezclados sobre card cálida (36 51 68)
    ─────────────────────────────────────────────────────────────────────────── */
 html.warm {
   --color-body-bg:   27  38  50;
   --color-body-text: 238 233 223;
-
-  --color-white: 238 233 223;  /* blanco cálido — editable */
+  --color-white:     238 233 223;   /* blanco cálido — editable */
 
   /* Gray — slate azulado */
-  --color-gray-50:   36  51  68;  /* #243344 */
-  --color-gray-100:  31  46  61;  /* #1F2E3D */
+  --color-gray-50:   36  51  68;   /* #243344 — fondo de cards */
+  --color-gray-100:  31  46  61;   /* #1F2E3D */
   --color-gray-200:  55  74  92;
-  --color-gray-300: 201 193 177;  /* #C9C1B1 */
-  --color-gray-400: 181 172 160;  /* #B5ACA0 */
-  --color-gray-500: 154 146 136;  /* #9A9288 */
-  --color-gray-600:  74  96 112;  /* #4A6070 */
-  --color-gray-700:  55  74  92;  /* #374A5C */
-  --color-gray-800:  44  59  77;  /* #2C3B4D */
-  --color-gray-900:  27  38  50;  /* #1B2632 */
-  --color-gray-950:  20  30  39;  /* #141E27 */
+  --color-gray-300: 201 193 177;   /* #C9C1B1 — texto terciario */
+  --color-gray-400: 181 172 160;   /* #B5ACA0 — texto secundario */
+  --color-gray-500: 154 146 136;   /* #9A9288 — texto muted */
+  --color-gray-600:  74  96 112;   /* #4A6070 */
+  --color-gray-700:  55  74  92;   /* #374A5C — inputs */
+  --color-gray-800:  44  59  77;   /* #2C3B4D */
+  --color-gray-900:  27  38  50;   /* #1B2632 */
+  --color-gray-950:  20  30  39;   /* #141E27 */
 
   /* Blue → rust/naranja */
-  --color-blue-50:   62  53  58;  /* tinte rust sutil pre-mezclado */
+  --color-blue-50:   62  53  58;   /* tinte rust sutil pre-mezclado */
   --color-blue-100:  53  53  61;
-  --color-blue-200: 201 193 177;  /* #C9C1B1 */
-  --color-blue-300: 255 177  98;  /* #FFB162 */
-  --color-blue-400: 255 177  98;  /* #FFB162 */
-  --color-blue-500: 163  81  57;  /* #A35139 */
-  --color-blue-600: 163  81  57;  /* #A35139 — botón primario */
-  --color-blue-700: 139  69  48;  /* #8B4530 */
-  --color-blue-800: 122  58  34;  /* #7A3A22 */
-  --color-blue-900: 122  58  34;  /* #7A3A22 */
+  --color-blue-200: 201 193 177;   /* #C9C1B1 */
+  --color-blue-300: 255 177  98;   /* #FFB162 */
+  --color-blue-400: 255 177  98;   /* #FFB162 */
+  --color-blue-500: 163  81  57;   /* #A35139 */
+  --color-blue-600: 163  81  57;   /* #A35139 — botón primario */
+  --color-blue-700: 139  69  48;   /* #8B4530 — hover */
+  --color-blue-800: 122  58  34;   /* #7A3A22 */
+  --color-blue-900: 122  58  34;
 
   /* Indigo → mismo rust */
   --color-indigo-50:  62  53  58;
@@ -46,123 +49,39 @@ html.warm {
   --color-indigo-800: 122  58  34;
   --color-indigo-900: 122  58  34;
 
-  /* Green — -50 y -100 pre-mezclados sobre superficie cálida (36 51 68) */
-  --color-green-50:   31  61  62;
+  /* Status colors — tintes pre-mezclados sobre card cálida (36 51 68) */
+
+  /* Success */
+  --color-green-50:   31  61  62;   /* green-900 = 20 83 45 */
   --color-green-100:  33  58  63;
-  --color-green-200: 187 247 208;
-  --color-green-300: 134 239 172;
-  --color-green-400:  74 222 128;
-  --color-green-500:  34 197  94;
-  --color-green-600:  22 163  74;
-  --color-green-700:  21 128  61;
-  --color-green-800:  22 101  52;
-  --color-green-900:  20  83  45;
 
-  /* Red — -50 y -100 pre-mezclados */
-  --color-red-50:   63  45  57;
+  /* Danger */
+  --color-red-50:   63  45  57;     /* red-900 = 127 29 29 */
   --color-red-100:  54  47  60;
-  --color-red-200: 254 202 202;
-  --color-red-300: 252 165 165;
-  --color-red-400: 248 113 113;
-  --color-red-500: 239  68  68;
-  --color-red-600: 220  38  38;
-  --color-red-700: 185  28  28;
-  --color-red-800: 153  27  27;
-  --color-red-900: 127  29  29;
 
-  /* Orange — -50 y -100 pre-mezclados */
-  --color-orange-50:   62  50  53;
+  /* Warning */
+  --color-orange-50:   62  50  53;  /* orange-900 = 124 45 18 */
   --color-orange-100:  54  50  58;
-  --color-orange-200: 254 215 170;
-  --color-orange-300: 253 186 116;
-  --color-orange-400: 251 146  60;
-  --color-orange-500: 249 115  22;
-  --color-orange-600: 234  88  12;
-  --color-orange-700: 194  65  12;
-  --color-orange-800: 154  52  18;
-  --color-orange-900: 124  45  18;
 
-  /* Purple — -50 y -100 pre-mezclados */
-  --color-purple-50:   51  44  89;
+  /* Category */
+  --color-purple-50:   51  44  89;  /* purple-900 = 88 28 135 */
   --color-purple-100:  47  47  81;
-  --color-purple-200: 233 213 255;
-  --color-purple-300: 216 180 254;
-  --color-purple-400: 192 132 252;
-  --color-purple-500: 168  85 247;
-  --color-purple-600: 147  51 234;
-  --color-purple-700: 126  34 206;
-  --color-purple-800: 107  33 168;
-  --color-purple-900:  88  28 135;
 
-  /* Pink — -50 y -100 pre-mezclados */
-  --color-pink-50:   64  43  68;
+  --color-pink-50:   64  43  68;    /* pink-900 = 131 24 67 */
   --color-pink-100:  55  46  67;
-  --color-pink-200: 251 207 232;
-  --color-pink-300: 249 168 212;
-  --color-pink-400: 244 114 182;
-  --color-pink-500: 236  72 153;
-  --color-pink-600: 219  39 119;
-  --color-pink-700: 190  24  93;
-  --color-pink-800: 157  23  77;
-  --color-pink-900: 131  24  67;
 
-  /* Amber — -50 y -100 pre-mezclados */
-  --color-amber-50:   61  52  53;
+  --color-amber-50:   61  52  53;   /* amber-900 = 120 53 15 */
   --color-amber-100:  53  52  57;
-  --color-amber-200: 253 230 138;
-  --color-amber-300: 252 211  77;
-  --color-amber-400: 251 191  36;
-  --color-amber-500: 245 158  11;
-  --color-amber-600: 217 119   6;
-  --color-amber-700: 180  83   9;
-  --color-amber-800: 146  64  14;
-  --color-amber-900: 120  53  15;
 
-  /* Teal — -50 y -100 pre-mezclados */
-  --color-teal-50:   31  59  70;
+  --color-teal-50:   31  59  70;    /* teal-900 = 19 78 74 */
   --color-teal-100:  33  57  69;
-  --color-teal-200: 153 246 228;
-  --color-teal-300:  94 234 212;
-  --color-teal-400:  45 212 191;
-  --color-teal-500:  20 184 166;
-  --color-teal-600:  13 148 136;
-  --color-teal-700:  15 118 110;
-  --color-teal-800:  17  94  89;
-  --color-teal-900:  19  78  74;
 
-  /* Yellow — -50 y -100 pre-mezclados */
-  --color-yellow-50:   59  55  53;
+  --color-yellow-50:   59  55  53;  /* yellow-900 = 113 63 18 */
   --color-yellow-100:  52  54  58;
-  --color-yellow-200: 254 240 138;
-  --color-yellow-300: 253 224  71;
-  --color-yellow-400: 250 204  21;
-  --color-yellow-500: 234 179   8;
-  --color-yellow-600: 202 138   4;
-  --color-yellow-700: 161  98   7;
-  --color-yellow-800: 133  77  14;
-  --color-yellow-900: 113  63  18;
 
-  /* Violet — -50 y -100 pre-mezclados */
-  --color-violet-50:   48  45  93;
+  --color-violet-50:   48  45  93;  /* violet-900 = 76 29 149 */
   --color-violet-100:  44  47  84;
-  --color-violet-200: 221 214 254;
-  --color-violet-300: 196 181 253;
-  --color-violet-400: 167 139 250;
-  --color-violet-500: 139  92 246;
-  --color-violet-600: 124  58 237;
-  --color-violet-700: 109  40 217;
-  --color-violet-800:  91  33 182;
-  --color-violet-900:  76  29 149;
 
-  /* Cyan — -50 y -100 pre-mezclados */
-  --color-cyan-50:   32  59  78;
+  --color-cyan-50:   32  59  78;    /* cyan-900 = 22 78 99 */
   --color-cyan-100:  33  57  74;
-  --color-cyan-200: 165 243 252;
-  --color-cyan-300: 103 232 249;
-  --color-cyan-400:  34 211 238;
-  --color-cyan-500:   6 182 212;
-  --color-cyan-600:   8 145 178;
-  --color-cyan-700:  14 116 144;
-  --color-cyan-800:  21  94 117;
-  --color-cyan-900:  22  78  99;
 }
