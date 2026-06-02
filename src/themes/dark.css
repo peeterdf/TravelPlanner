@@ -1,10 +1,16 @@
 /* ── Dark theme ──────────────────────────────────────────────────────────────
-   Superficies oscuras. El accent azul es igual que en light.
-   Editar aquí para cambiar el tema oscuro.
+   Superficies oscuras. Accent azul igual que en light.
+   Los grays de superficie se invierten; text-white sigue siendo blanco puro
+   (no remapeado) para que sea legible sobre fondos coloreados.
    ─────────────────────────────────────────────────────────────────────────── */
 html.dark {
-  /* Gray scale — invertida para superficies oscuras */
-  --color-gray-50:   17  24  39;  /* cards/modals: #111827 */
+  /* Colores de body */
+  --color-body-bg:    3   7  18;  /* #030712 */
+  --color-body-text: 249 250 251; /* #f9fafb */
+
+  /* Gray scale — en dark los números bajos son superficies oscuras,
+     los altos son texto claro (igual que Tailwind estándar) */
+  --color-gray-50:   17  24  39;  /* fondo de cards: #111827 */
   --color-gray-100:  31  41  55;
   --color-gray-200:  55  65  81;
   --color-gray-300: 209 213 219;
@@ -15,7 +21,6 @@ html.dark {
   --color-gray-800:  31  41  55;
   --color-gray-900:  17  24  39;
   --color-gray-950:   3   7  18;
-  --color-white:     31  41  55;  /* bg-white → superficie oscura */
 
   /* Blue scale — igual que light */
   --color-blue-50:  239 246 255;

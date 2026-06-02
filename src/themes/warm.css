@@ -1,10 +1,14 @@
 /* ── Warm theme ──────────────────────────────────────────────────────────────
    Fondos: slate azulado oscuro. Accent: rust/naranja reemplaza al azul.
-   Editar aquí para cambiar el tema cálido.
+   text-white sigue siendo blanco puro para que sea legible sobre botones.
    ─────────────────────────────────────────────────────────────────────────── */
 html.warm {
+  /* Colores de body */
+  --color-body-bg:   27  38  50;  /* #1B2632 */
+  --color-body-text: 238 233 223; /* #EEE9DF */
+
   /* Gray scale — slate azulado */
-  --color-gray-50:   36  51  68;  /* #243344 */
+  --color-gray-50:   36  51  68;  /* #243344 — fondo de cards */
   --color-gray-100:  31  46  61;  /* #1F2E3D */
   --color-gray-200:  55  74  92;  /* #374A5C */
   --color-gray-300: 201 193 177;  /* #C9C1B1 — texto terciario */
@@ -15,7 +19,6 @@ html.warm {
   --color-gray-800:  44  59  77;  /* #2C3B4D */
   --color-gray-900:  27  38  50;  /* #1B2632 */
   --color-gray-950:  20  30  39;  /* #141E27 */
-  --color-white:     44  59  77;  /* #2C3B4D — bg-white → superficie cálida */
 
   /* Blue scale → rust/naranja */
   --color-blue-50:  163  81  57;  /* #A35139 — usado con /10, /12, /20 */
