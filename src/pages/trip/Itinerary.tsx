@@ -154,7 +154,7 @@ export function Itinerary() {
             {cityNights.map(([city, nights]) => (
               <div key={city} className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg px-2.5 py-1.5">
                 <Moon size={12} className="text-gray-500 dark:text-gray-400" />
-                <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{city}</span>
+                <span className="text-sm font-medium text-gray-800 dark:text-white">{city}</span>
                 <span className="text-xs text-gray-500 dark:text-gray-400">{nights}n</span>
               </div>
             ))}
@@ -289,7 +289,7 @@ export function Itinerary() {
                 >
                   <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">{format(day, 'd')}</p>
                   {data?.city && (
-                    <p className="text-xs font-medium text-gray-800 dark:text-gray-200 mt-0.5 leading-tight line-clamp-2">{data.city}</p>
+                    <p className="text-xs font-medium text-gray-800 dark:text-white mt-0.5 leading-tight line-clamp-2">{data.city}</p>
                   )}
                   {data?.notes && (
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 leading-tight line-clamp-1">{data.notes}</p>

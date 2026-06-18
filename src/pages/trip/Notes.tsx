@@ -12,7 +12,7 @@ export function Notes() {
     <div className="p-4 pb-28">
       <textarea
         className="w-full min-h-[65vh] border border-gray-200 dark:border-gray-700 rounded-2xl
-                   px-4 py-3 text-sm text-gray-800 dark:text-gray-200
+                   px-4 py-3 text-sm text-gray-800 dark:text-white
                    bg-white dark:bg-gray-800 resize-none
                    focus:outline-none focus:ring-2 focus:ring-blue-500
                    placeholder-gray-400 dark:placeholder-gray-500"
