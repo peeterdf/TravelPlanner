@@ -466,7 +466,7 @@ export function Home() {
               Compartí este código con el grupo. Quien lo ingrese en "Unirse a un viaje" verá y editará el mismo viaje en tiempo real.
             </p>
             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 flex items-center gap-3">
-              <code className="flex-1 text-xs font-mono text-gray-800 dark:text-gray-200 break-all">{syncCode}</code>
+              <code className="flex-1 text-xs font-mono text-gray-800 dark:text-white break-all">{syncCode}</code>
               <button
                 onClick={handleCopyCode}
                 className="shrink-0 p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 rounded-lg transition-colors"

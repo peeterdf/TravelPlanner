@@ -50,7 +50,7 @@ export function Audit() {
                 {author && (
                   <span className="text-xs font-medium text-blue-600 dark:text-blue-400 mr-1">{author.name}</span>
                 )}
-                <span className="text-sm text-gray-800 dark:text-gray-200">
+                <span className="text-sm text-gray-800 dark:text-gray-300">
                   {ACTION_LABEL[entry.action]}{' '}
                   <span className="font-medium">{entry.section}</span>:{' '}
                   {entry.description}

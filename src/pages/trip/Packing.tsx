@@ -122,7 +122,7 @@ export function Packing() {
                       >
                         {item.checked && <span className="text-white text-xs font-bold">✓</span>}
                       </button>
-                      <span className={`flex-1 text-sm ${item.checked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
+                      <span className={`flex-1 text-sm ${item.checked ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-800 dark:text-white'}`}>
                         {item.name}
                       </span>
                       <button
