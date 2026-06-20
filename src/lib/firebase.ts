@@ -1,13 +1,16 @@
 import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 import {
-  getAuth, signInAnonymously, signInWithPopup, linkWithPopup, linkWithCredential,
+  getAuth, signInAnonymously, signInWithPopup, linkWithPopup, linkWithCredential, signInWithCredential,
   signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail,
   GoogleAuthProvider, EmailAuthProvider, onAuthStateChanged, signOut as fbSignOut,
 } from 'firebase/auth'
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check'
+import { Capacitor } from '@capacitor/core'
 import { useAuthStore } from '../store/authStore'
 import { useToastStore } from '../store/toastStore'
+
+const isNative = Capacitor.isNativePlatform()
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -75,6 +78,30 @@ export async function ensureAuth(): Promise<void> {
 }
 
 export async function signInWithGoogle(): Promise<void> {
+  if (isNative) {
+    // Native: use system Google account picker (no WebView popup)
+    const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
+    const result = await FirebaseAuthentication.signInWithGoogle()
+    const idToken = result.credential?.idToken
+    if (!idToken) throw new Error('Google sign-in: no idToken received')
+    const credential = GoogleAuthProvider.credential(idToken)
+    const current = auth.currentUser
+    if (current?.isAnonymous) {
+      try {
+        await linkWithCredential(current, credential)
+      } catch (err: unknown) {
+        if ((err as { code?: string }).code === 'auth/credential-already-in-use') {
+          await signInWithCredential(auth, credential)
+        } else {
+          throw err
+        }
+      }
+    } else {
+      await signInWithCredential(auth, credential)
+    }
+    return
+  }
+  // Web: popup flow
   const current = auth.currentUser
   if (current?.isAnonymous) {
     try {
