@@ -2,11 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const isAndroid = process.env.BUILD_TARGET === 'android'
+
 export default defineConfig({
-  base: '/TravelPlanner/',
+  base: isAndroid ? '/' : '/TravelPlanner/',
   plugins: [
     react(),
-    VitePWA({
+    ...(!isAndroid ? [VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
       filename: 'sw.ts',
@@ -28,6 +30,6 @@ export default defineConfig({
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
         ],
       },
-    }),
+    })] : []),
   ],
 })
