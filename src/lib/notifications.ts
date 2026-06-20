@@ -1,0 +1,99 @@
+import { parseISO, addDays, format } from 'date-fns'
+import localforage from 'localforage'
+import type { Trip } from '../types'
+
+export interface ScheduledNotification {
+  id: string
+  time: number
+  title: string
+  body: string
+  fired: boolean
+}
+
+const STORE_KEY = 'scheduled_notifications'
+const ICON = `${import.meta.env.BASE_URL}icon-192.png`
+
+export async function requestPermission(): Promise<NotificationPermission> {
+  if (!('Notification' in window)) return 'denied'
+  if (Notification.permission !== 'default') return Notification.permission
+  return Notification.requestPermission()
+}
+
+export function buildSchedule(trips: Trip[]): ScheduledNotification[] {
+  const cutoff = Date.now() - 3_600_000 // 1h grace for missed notifications
+  const notifs: ScheduledNotification[] = []
+
+  for (const trip of trips) {
+    for (const t of trip.transports) {
+      if (!t.departureDate) continue
+      const depMs = parseISO(`${t.departureDate}T${t.departureTime || '12:00'}`).getTime()
+      const label = `${t.origin} → ${t.destination}`
+      const timeStr = t.departureTime ? ` a las ${t.departureTime}` : ''
+
+      if (t.type === 'avión') {
+        const ciMs = depMs - 24 * 3_600_000
+        if (ciMs > cutoff) notifs.push({ id: `ci-${t.id}`, time: ciMs, title: `📋 Check-in online — ${trip.name}`, body: `Abrió el check-in para ${label}`, fired: false })
+      }
+
+      const dep24Ms = depMs - 24 * 3_600_000 + 5 * 60_000
+      if (dep24Ms > cutoff) notifs.push({ id: `dep24-${t.id}`, time: dep24Ms, title: `✈️ Salida mañana — ${trip.name}`, body: `${label}${timeStr}`, fired: false })
+
+      const dep2Ms = depMs - 2 * 3_600_000
+      if (dep2Ms > cutoff) notifs.push({ id: `dep2-${t.id}`, time: dep2Ms, title: `🚀 ¡Salida en 2 horas! — ${trip.name}`, body: `${label}${timeStr}`, fired: false })
+    }
+
+    for (const a of trip.accommodations) {
+      if (!a.checkInDate) continue
+      const inMs = parseISO(`${a.checkInDate}T09:00`).getTime()
+      if (inMs > cutoff) notifs.push({ id: `hin-${a.id}`, time: inMs, title: `🏨 Check-in hoy — ${trip.name}`, body: `Alojamiento en ${a.city}${a.address ? ` · ${a.address}` : ''}`, fired: false })
+
+      if (a.nights > 0) {
+        const outDate = format(addDays(parseISO(a.checkInDate), a.nights), 'yyyy-MM-dd')
+        const outMs = parseISO(`${outDate}T08:00`).getTime()
+        if (outMs > cutoff) notifs.push({ id: `hout-${a.id}`, time: outMs, title: `🧳 Check-out hoy — ${trip.name}`, body: `Recordá hacer el check-out en ${a.city}`, fired: false })
+      }
+    }
+
+    for (const a of trip.activities) {
+      if (!a.date || a.status === 'realizada') continue
+      const remMs = a.time
+        ? parseISO(`${a.date}T${a.time}`).getTime() - 30 * 60_000
+        : parseISO(`${a.date}T08:00`).getTime()
+      if (remMs > cutoff) notifs.push({ id: `act-${a.id}`, time: remMs, title: `⭐ ${a.place} — ${trip.name}`, body: a.time ? `En 30 minutos (${a.time}) en ${a.city}` : `Actividad de hoy en ${a.city}`, fired: false })
+    }
+  }
+
+  return notifs.sort((a, b) => a.time - b.time)
+}
+
+export async function saveSchedule(trips: Trip[]): Promise<void> {
+  const existing = (await localforage.getItem<ScheduledNotification[]>(STORE_KEY)) ?? []
+  const firedIds = new Set(existing.filter(n => n.fired).map(n => n.id))
+  const schedule = buildSchedule(trips).map(n => ({ ...n, fired: firedIds.has(n.id) }))
+  await localforage.setItem(STORE_KEY, schedule)
+  const sw = navigator.serviceWorker?.controller
+  if (sw) sw.postMessage({ type: 'SCHEDULE_NOTIFICATIONS', schedule: schedule.filter(n => !n.fired) })
+}
+
+async function showViaSwReg(title: string, options: NotificationOptions): Promise<void> {
+  const reg = await navigator.serviceWorker.ready
+  await reg.showNotification(title, options)
+}
+
+export async function checkAndFireDue(): Promise<void> {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return
+  const schedule = (await localforage.getItem<ScheduledNotification[]>(STORE_KEY)) ?? []
+  const now = Date.now()
+  let changed = false
+  const updated = schedule.map(n => {
+    if (!n.fired && n.time <= now) {
+      showViaSwReg(n.title, { body: n.body, icon: ICON, tag: n.id }).catch(() => {
+        new Notification(n.title, { body: n.body, icon: ICON, tag: n.id })
+      })
+      changed = true
+      return { ...n, fired: true }
+    }
+    return n
+  })
+  if (changed) await localforage.setItem(STORE_KEY, updated)
+}

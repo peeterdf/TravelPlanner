@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload, Sun, Moon, Monitor, Flame, Eye, EyeOff, Cloud, CloudUpload, UserPlus, Copy, Check } from 'lucide-react'
+import { Plus, MapPin, Trash2, Calendar, Users, Sparkles, Upload, Sun, Moon, Monitor, Flame, Eye, EyeOff, Cloud, CloudUpload, UserPlus, Copy, Check, Bell, BellOff } from 'lucide-react'
 import { useTripsStore } from '../store/tripsStore'
 import { useSettingsStore, useMask } from '../store/settingsStore'
+import { requestPermission, saveSchedule } from '../lib/notifications'
 import { useAuthStore } from '../store/authStore'
 import { Modal } from '../components/ui/Modal'
 import { EmptyState } from '../components/ui/EmptyState'
@@ -25,7 +26,7 @@ const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl 
 
 export function Home() {
   const { trips, loaded, load, addTrip, deleteTrip, leaveTrip, importTrip, syncToCloud, joinTrip, claimTraveler } = useTripsStore()
-  const { theme, privacyMode, cycleTheme, togglePrivacy } = useSettingsStore()
+  const { theme, privacyMode, cycleTheme, togglePrivacy, notificationsEnabled, setNotificationsEnabled } = useSettingsStore()
   const { user, role } = useAuthStore()
   const mask = useMask()
   const navigate = useNavigate()
@@ -58,6 +59,19 @@ export function Home() {
   const [backfillEmail, setBackfillEmail] = useState('')
   const [backfillResult, setBackfillResult] = useState<string | null>(null)
   const [backfilling, setBackfilling] = useState(false)
+
+  const [permState, setPermState] = useState<NotificationPermission>(() =>
+    typeof Notification !== 'undefined' ? Notification.permission : 'denied'
+  )
+
+  const handleEnableNotifications = async () => {
+    const perm = await requestPermission()
+    setPermState(perm)
+    if (perm === 'granted') {
+      setNotificationsEnabled(true)
+      void saveSchedule(trips)
+    }
+  }
 
   useEffect(() => { load() }, [load])
 
@@ -240,6 +254,19 @@ export function Home() {
             >
               {privacyMode ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
+            {'Notification' in window && (
+              <button
+                onClick={notificationsEnabled
+                  ? () => setNotificationsEnabled(false)
+                  : () => void handleEnableNotifications()
+                }
+                className={`p-2 transition-colors ${notificationsEnabled ? 'text-white' : 'text-blue-200 hover:text-white'}`}
+                aria-label={notificationsEnabled ? 'Desactivar notificaciones' : 'Activar notificaciones'}
+                title={notificationsEnabled ? 'Notificaciones activas' : 'Activar notificaciones'}
+              >
+                {notificationsEnabled ? <Bell size={18} /> : <BellOff size={18} />}
+              </button>
+            )}
             <UserMenu variant="light" />
           </div>
         </div>
@@ -255,6 +282,21 @@ export function Home() {
       </header>
 
       <div className="p-4 space-y-3 pb-24">
+        {'Notification' in window && !notificationsEnabled && permState !== 'denied' && (
+          <div className="bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-2xl p-4 flex items-center gap-3">
+            <Bell size={20} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Activar alertas de viaje</p>
+              <p className="text-xs text-blue-600 dark:text-blue-300 mt-0.5">Recordatorios de vuelos, hotel y actividades</p>
+            </div>
+            <button
+              onClick={() => void handleEnableNotifications()}
+              className="shrink-0 bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Activar
+            </button>
+          </div>
+        )}
         {trips.length === 0 ? (
           <EmptyState
             icon={<MapPin size={56} />}

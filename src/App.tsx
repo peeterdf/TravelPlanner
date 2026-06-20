@@ -25,6 +25,7 @@ import { SyncDot } from './components/ui/SyncDot'
 import { UserMenu } from './components/ui/UserMenu'
 import { Toasts } from './components/ui/Toasts'
 import { Privacy } from './pages/Privacy'
+import { useNotificationScheduler } from './hooks/useNotificationScheduler'
 import type { Trip } from './types'
 
 function shareTrip(trip: Trip) {
@@ -141,6 +142,11 @@ function TripLayout() {
   )
 }
 
+function NotificationScheduler() {
+  useNotificationScheduler()
+  return null
+}
+
 function AppLoader() {
   const { load } = useTripsStore()
   const { load: loadPasses } = useBoardingPassStore()
@@ -224,6 +230,7 @@ export default function App() {
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ThemeApplier />
       <AppLoader />
+      <NotificationScheduler />
       <AppRoutes />
       <Toasts />
     </BrowserRouter>

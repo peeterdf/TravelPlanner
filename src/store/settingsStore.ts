@@ -5,9 +5,11 @@ export type Theme = 'light' | 'dark' | 'warm' | 'system'
 interface SettingsState {
   theme: Theme
   privacyMode: boolean
+  notificationsEnabled: boolean
   setTheme: (t: Theme) => void
   cycleTheme: () => void
   togglePrivacy: () => void
+  setNotificationsEnabled: (v: boolean) => void
 }
 
 const loadTheme = (): Theme => {
@@ -32,6 +34,7 @@ const CYCLE: Theme[] = ['light', 'dark', 'warm', 'system']
 export const useSettingsStore = create<SettingsState>((set, get) => ({
   theme: loadTheme(),
   privacyMode: loadBool('privacyMode', false),
+  notificationsEnabled: loadBool('notificationsEnabled', false),
   setTheme: (theme) => {
     localStorage.setItem('theme', theme)
     set({ theme })
@@ -46,6 +49,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     localStorage.setItem('privacyMode', String(next))
     return { privacyMode: next }
   }),
+  setNotificationsEnabled: (notificationsEnabled) => {
+    localStorage.setItem('notificationsEnabled', String(notificationsEnabled))
+    set({ notificationsEnabled })
+  },
 }))
 
 export const useMask = () => {
