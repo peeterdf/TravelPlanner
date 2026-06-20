@@ -25,3 +25,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Capacitor native projects (generated in CI)
+/android
+/ios

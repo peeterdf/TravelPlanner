@@ -1,5 +1,7 @@
 import { parseISO, addDays, format } from 'date-fns'
 import localforage from 'localforage'
+import { Capacitor } from '@capacitor/core'
+import { LocalNotifications } from '@capacitor/local-notifications'
 import type { Trip } from '../types'
 
 export interface ScheduledNotification {
@@ -12,15 +14,27 @@ export interface ScheduledNotification {
 
 const STORE_KEY = 'scheduled_notifications'
 const ICON = `${import.meta.env.BASE_URL}icon-192.png`
+const isNative = Capacitor.isNativePlatform()
+
+// Stable numeric ID for Capacitor (Android uses 32-bit int)
+function hashId(str: string): number {
+  let h = 0
+  for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0
+  return (Math.abs(h) % 2_000_000_000) + 1
+}
 
 export async function requestPermission(): Promise<NotificationPermission> {
+  if (isNative) {
+    const { display } = await LocalNotifications.requestPermissions()
+    return display === 'granted' ? 'granted' : 'denied'
+  }
   if (!('Notification' in window)) return 'denied'
   if (Notification.permission !== 'default') return Notification.permission
   return Notification.requestPermission()
 }
 
 export function buildSchedule(trips: Trip[]): ScheduledNotification[] {
-  const cutoff = Date.now() - 3_600_000 // 1h grace for missed notifications
+  const cutoff = Date.now() - 3_600_000
   const notifs: ScheduledNotification[] = []
 
   for (const trip of trips) {
@@ -67,6 +81,25 @@ export function buildSchedule(trips: Trip[]): ScheduledNotification[] {
 }
 
 export async function saveSchedule(trips: Trip[]): Promise<void> {
+  if (isNative) {
+    const pending = await LocalNotifications.getPending()
+    if (pending.notifications.length > 0) {
+      await LocalNotifications.cancel({ notifications: pending.notifications.map(n => ({ id: n.id })) })
+    }
+    const future = buildSchedule(trips).filter(n => n.time > Date.now())
+    if (future.length > 0) {
+      await LocalNotifications.schedule({
+        notifications: future.map(n => ({
+          id: hashId(n.id),
+          title: n.title,
+          body: n.body,
+          schedule: { at: new Date(n.time) },
+        })),
+      })
+    }
+    return
+  }
+
   const existing = (await localforage.getItem<ScheduledNotification[]>(STORE_KEY)) ?? []
   const firedIds = new Set(existing.filter(n => n.fired).map(n => n.id))
   const schedule = buildSchedule(trips).map(n => ({ ...n, fired: firedIds.has(n.id) }))
@@ -81,6 +114,7 @@ async function showViaSwReg(title: string, options: NotificationOptions): Promis
 }
 
 export async function checkAndFireDue(): Promise<void> {
+  if (isNative) return // LocalNotifications entrega de forma nativa
   if (!('Notification' in window) || Notification.permission !== 'granted') return
   const schedule = (await localforage.getItem<ScheduledNotification[]>(STORE_KEY)) ?? []
   const now = Date.now()
