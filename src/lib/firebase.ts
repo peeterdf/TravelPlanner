@@ -19,19 +19,24 @@ const firebaseConfig = {
 // Show diagnostic immediately if any config key is missing
 const missingKeys = (Object.keys(firebaseConfig) as (keyof typeof firebaseConfig)[])
   .filter(k => !firebaseConfig[k])
-if (missingKeys.length > 0) {
-  // Defer so the toast store is ready
+
+export const cloudEnabled = missingKeys.length === 0
+
+if (!cloudEnabled) {
+  // Sin config de Firebase: tratar como no autenticado de inmediato
   setTimeout(() => {
-    useToastStore.getState().add(
-      `⚠️ Firebase config incompleto. Faltan: ${missingKeys.join(', ')}. ` +
-      `Revisá los GitHub Secrets del repo (Settings → Secrets → Actions).`
-    )
-  }, 500)
+    useAuthStore.getState().setUser(null)
+    if (missingKeys.length > 0) {
+      useToastStore.getState().add(
+        `Firebase desactivado (faltan: ${missingKeys.join(', ')}). La app funciona sin sincronización.`
+      )
+    }
+  }, 0)
 }
 
-const app = initializeApp(firebaseConfig)
+const app = cloudEnabled ? initializeApp(firebaseConfig) : initializeApp(firebaseConfig, 'stub')
 
-if (import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
+if (cloudEnabled && import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
   initializeAppCheck(app, {
     provider: new ReCaptchaV3Provider(import.meta.env.VITE_RECAPTCHA_SITE_KEY),
     isTokenAutoRefreshEnabled: true,
@@ -40,12 +45,12 @@ if (import.meta.env.VITE_RECAPTCHA_SITE_KEY) {
 
 export const db = getFirestore(app)
 export const auth = getAuth(app)
-export const cloudEnabled = true
 
 const googleProvider = new GoogleAuthProvider()
 
 let authResolved = false
 const authReadyPromise = new Promise<void>(resolve => {
+  if (!cloudEnabled) { resolve(); return }
   onAuthStateChanged(auth, (user) => {
     useAuthStore.getState().setUser(user)
     if (!authResolved) { authResolved = true; resolve() }
@@ -53,8 +58,8 @@ const authReadyPromise = new Promise<void>(resolve => {
 })
 
 export async function ensureAuth(): Promise<void> {
+  if (!cloudEnabled) return
   if (!authResolved) {
-    // Never hang forever — if Firebase doesn't respond in 10 s, something is wrong
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Firebase auth timeout — revisá la configuración del proyecto (API key, authDomain, projectId).')), 10_000)
     )
