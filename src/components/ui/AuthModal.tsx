@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { X, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react'
+import { Capacitor } from '@capacitor/core'
 import { auth, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPassword } from '../../lib/firebase'
 import { useAuthStore } from '../../store/authStore'
+
+const isNative = Capacitor.isNativePlatform()
 
 type Mode = 'login' | 'register' | 'forgot'
 
@@ -103,8 +106,8 @@ export function AuthModal({ onClose }: AuthModalProps) {
         </div>
 
         <div className="space-y-3">
-          {/* Google button (login & register only) */}
-          {mode !== 'forgot' && (
+          {/* Google button (login & register only, not available in native WebView) */}
+          {mode !== 'forgot' && !isNative && (
             <>
               <button
                 onClick={handleGoogle}
