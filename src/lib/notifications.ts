@@ -93,7 +93,9 @@ export async function saveSchedule(trips: Trip[]): Promise<void> {
           id: hashId(n.id),
           title: n.title,
           body: n.body,
-          schedule: { at: new Date(n.time) },
+          // allowWhileIdle bypasses Doze mode so the alarm fires even with
+          // the screen off or the app in the background.
+          schedule: { at: new Date(n.time), allowWhileIdle: true },
         })),
       })
     }
