@@ -88,8 +88,9 @@ jobs:
       - name: Verify APK signing certificate
         run: |
           echo "=== SHA-1 del APK firmado ==="
-          keytool -printcert -jarfile android/app/build/outputs/apk/debug/app-debug.apk \
-            2>&1 | grep -E "SHA1|SHA256"
+          APKSIGNER=$(find $ANDROID_SDK_ROOT/build-tools -name apksigner | sort -V | tail -1)
+          $APKSIGNER verify --print-certs android/app/build/outputs/apk/debug/app-debug.apk \
+            | grep -E "SHA-1|SHA-256|certificate"
 
       - name: Publish GitHub Release
         env:
