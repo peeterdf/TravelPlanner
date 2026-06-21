@@ -81,7 +81,13 @@ export async function signInWithGoogle(): Promise<void> {
   if (isNative) {
     // Native: use system Google account picker (no WebView popup)
     const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
-    const result = await FirebaseAuthentication.signInWithGoogle()
+    let result
+    try {
+      result = await FirebaseAuthentication.signInWithGoogle({ useCredentialManager: false })
+    } catch (err) {
+      console.error('[Google Sign-In] native error:', JSON.stringify(err), err)
+      throw err
+    }
     const idToken = result.credential?.idToken
     if (!idToken) throw new Error('Google sign-in: no idToken received')
     const credential = GoogleAuthProvider.credential(idToken)

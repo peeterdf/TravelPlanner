@@ -21,7 +21,10 @@ const FIREBASE_ERRORS: Record<string, string> = {
 function friendlyError(err: unknown): string {
   const code = (err as { code?: string }).code ?? ''
   const msg = (err as { message?: string }).message ?? ''
-  return FIREBASE_ERRORS[code] ?? msg ?? 'Ocurrió un error. Intentá de nuevo.'
+  if (FIREBASE_ERRORS[code] !== undefined) return FIREBASE_ERRORS[code]
+  // Show raw error info for debugging unknown errors
+  const detail = [code, msg].filter(Boolean).join(' — ')
+  return detail || 'Ocurrió un error. Intentá de nuevo.'
 }
 
 interface AuthModalProps {
