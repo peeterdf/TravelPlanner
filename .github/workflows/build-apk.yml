@@ -52,8 +52,20 @@ jobs:
       - name: Configure Google Services
         run: |
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > android/app/google-services.json
-          sed -i "s|classpath 'com.android.tools.build:gradle|classpath 'com.google.gms:google-services:4.4.2'\n        classpath 'com.android.tools.build:gradle|" android/build.gradle
-          echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
+          # Extract web client ID (type 3) and write the string resource directly
+          # This is what the google-services Gradle plugin would generate
+          WEB_CLIENT_ID=$(python3 -c "
+          import json
+          data = json.load(open('android/app/google-services.json'))
+          for client in data['client']:
+              for oc in client['oauth_client']:
+                  if oc['client_type'] == 3:
+                      print(oc['client_id'])
+                      break
+          ")
+          mkdir -p android/app/src/main/res/values
+          echo "<?xml version=\"1.0\" encoding=\"utf-8\"?><resources><string name=\"default_web_client_id\">${WEB_CLIENT_ID}</string></resources>" \
+            > android/app/src/main/res/values/google-services-generated.xml
 
       - name: Restore debug keystore
         run: |
