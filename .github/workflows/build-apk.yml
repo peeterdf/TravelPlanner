@@ -79,6 +79,19 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Configure debug signing
+        run: |
+          # Override debug signing config to use the keystore we restored above.
+          # Gradle's default may generate a fresh keystore; appending to build.gradle
+          # forces it to use ours, so the SHA-1 matches what's in Firebase Console.
+          cat >> android/app/build.gradle << 'GRADLE'
+
+          android.signingConfigs.debug.storeFile = new File(System.getProperty("user.home"), ".android/debug.keystore")
+          android.signingConfigs.debug.storePassword = "android"
+          android.signingConfigs.debug.keyAlias = "androiddebugkey"
+          android.signingConfigs.debug.keyPassword = "android"
+          GRADLE
+
       - name: Build debug APK
         run: |
           cd android
