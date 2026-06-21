@@ -3,6 +3,9 @@ import { Star, CheckSquare, FileText, ClipboardList, ArrowRight, LayoutDashboard
 import { useSettingsStore } from '../../store/settingsStore'
 import { requestPermission, saveSchedule } from '../../lib/notifications'
 import { useTripsStore } from '../../store/tripsStore'
+import { Capacitor } from '@capacitor/core'
+
+const isNative = Capacitor.isNativePlatform()
 
 export function More() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -48,7 +51,7 @@ export function More() {
           <ArrowRight size={18} className="text-gray-400 dark:text-gray-500" />
         </button>
       ))}
-      {'Notification' in window && (
+      {(isNative || 'Notification' in window) && (
         <button
           onClick={() => void handleToggleNotifications()}
           className="w-full bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4 flex items-center gap-4 hover:shadow-md transition-shadow active:scale-[0.99]"
