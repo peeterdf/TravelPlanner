@@ -23,7 +23,7 @@ const CATEGORIES: { value: ExpenseCategory; label: string; icon: React.ReactNode
 
 const EMPTY: Omit<Expense, 'id'> = {
   concept: '', date: '', detail: '', price: 0, paid: 0,
-  reserved: false, currency: 'USD', paidBy: '', includedTravelers: [],
+  reserved: false, currency: 'USD', paidBy: '', includedTravelers: [], exchangeRate: undefined,
 }
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
@@ -87,11 +87,24 @@ export function Expenses() {
   const splitExpenses = sorted.filter(e => e.paidBy)
   const currency = trip.currency ?? 'USD'
 
-  // Balance grouped by currency
-  const splitCurrencies = [...new Set(splitExpenses.map(e => e.currency ?? currency))]
-  const isMultiCurrency = splitCurrencies.length > 1
-  const balanceByCurrency = splitCurrencies.map(cur => {
-    const curExpenses = splitExpenses.filter(e => (e.currency ?? currency) === cur)
+  // Balance: unified in trip currency using exchange rates
+  const convertible = splitExpenses.filter(e => (e.currency ?? currency) === currency || e.exchangeRate != null)
+  const nonConvertible = splitExpenses.filter(e => (e.currency ?? currency) !== currency && e.exchangeRate == null)
+
+  const unifiedNet: Record<string, number> = {}
+  for (const e of convertible) {
+    const rate = (e.currency ?? currency) === currency ? 1 : (e.exchangeRate ?? 1)
+    const priceBase = round2(e.price * rate)
+    const included = e.includedTravelers?.length ? e.includedTravelers : travelerNames
+    const share = included.length > 0 ? round2(priceBase / included.length) : 0
+    unifiedNet[e.paidBy!] = round2((unifiedNet[e.paidBy!] ?? 0) + priceBase)
+    for (const p of included) unifiedNet[p] = round2((unifiedNet[p] ?? 0) - share)
+  }
+  const unifiedSettlements = calcSettlements(unifiedNet)
+
+  const nonConvertibleCurrencies = [...new Set(nonConvertible.map(e => e.currency ?? currency))]
+  const nonConvertibleByCurrency = nonConvertibleCurrencies.map(cur => {
+    const curExpenses = nonConvertible.filter(e => (e.currency ?? currency) === cur)
     const net: Record<string, number> = {}
     for (const e of curExpenses) {
       const included = e.includedTravelers?.length ? e.includedTravelers : travelerNames
@@ -121,13 +134,14 @@ export function Expenses() {
     if (!concept) return
     if (form.paid > form.price) { setPaidError('El monto pagado no puede superar el precio total.'); return }
     setPaidError('')
-    const { category, paidBy, ...rest } = form
+    const { category, paidBy, exchangeRate, ...rest } = form
     const data = {
       ...rest,
       concept,
       detail: form.detail.trim(),
       ...(category ? { category } : {}),
       ...(paidBy ? { paidBy, includedTravelers: form.includedTravelers } : { includedTravelers: [] }),
+      ...(exchangeRate && form.currency !== currency ? { exchangeRate } : {}),
     }
     if (modal === 'add') addExpense(tripId!, data)
     else if (modal === 'edit' && editId) updateExpense(tripId!, { ...data, id: editId })
@@ -251,50 +265,86 @@ export function Expenses() {
             />
           ) : (
             <>
-              {isMultiCurrency && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2">
-                  Hay gastos en distintas monedas. El balance se muestra por separado para cada una.
-                </p>
-              )}
-              {balanceByCurrency.map(({ currency: cur, net, settlements }) => (
-                <div key={cur} className="space-y-3">
-                  {isMultiCurrency && (
-                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">{cur}</p>
-                  )}
-
-                  {/* Balance per person */}
+              {/* Unified balance in trip currency */}
+              {convertible.length > 0 && (
+                <div className="space-y-3">
                   <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Balance por persona</p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                      Balance por persona · {currency}
+                    </p>
                     <div className="space-y-2">
-                      {Object.entries(net).sort((a, b) => b[1] - a[1]).map(([person, bal]) => (
+                      {Object.entries(unifiedNet).sort((a, b) => b[1] - a[1]).map(([person, bal]) => (
                         <div key={person} className="flex items-center justify-between">
                           <span className="font-medium text-gray-900 dark:text-white text-sm">{mask.name(person)}</span>
                           <span className={`text-xs font-medium ${bal > 0.5 ? 'text-success' : bal < -0.5 ? 'text-danger' : 'text-muted'}`}>
-                            {bal > 0.5 ? `le deben ${cur} ${mask.amount(bal)}` : bal < -0.5 ? `debe ${cur} ${mask.amount(Math.abs(bal))}` : '✓ par'}
+                            {bal > 0.5 ? `le deben ${currency} ${mask.amount(bal)}` : bal < -0.5 ? `debe ${currency} ${mask.amount(Math.abs(bal))}` : '✓ par'}
                           </span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Settlements */}
-                  {settlements.length > 0 && (
+                  {unifiedSettlements.length > 0 && (
                     <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
                       <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Cómo saldar</p>
                       <div className="space-y-2.5">
-                        {settlements.map((s, i) => (
+                        {unifiedSettlements.map((s, i) => (
                           <div key={i} className="flex items-center gap-2 text-sm">
                             <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.from)}</span>
                             <ArrowRight size={14} className="text-gray-400 shrink-0" />
                             <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.to)}</span>
-                            <span className="ml-auto text-gray-700 dark:text-gray-300 font-semibold">{cur} {mask.amount2(s.amount)}</span>
+                            <span className="ml-auto text-gray-700 dark:text-gray-300 font-semibold">{currency} {mask.amount2(s.amount)}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   )}
                 </div>
-              ))}
+              )}
+
+              {/* Non-convertible expenses (no exchange rate set) */}
+              {nonConvertible.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2">
+                    {nonConvertible.length === 1
+                      ? '1 gasto no tiene tipo de cambio y se muestra por separado.'
+                      : `${nonConvertible.length} gastos no tienen tipo de cambio y se muestran por separado.`}
+                  </p>
+                  {nonConvertibleByCurrency.map(({ currency: cur, net, settlements }) => (
+                    <div key={cur} className="space-y-3">
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">{cur}</p>
+                      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Balance por persona</p>
+                        <div className="space-y-2">
+                          {Object.entries(net).sort((a, b) => b[1] - a[1]).map(([person, bal]) => (
+                            <div key={person} className="flex items-center justify-between">
+                              <span className="font-medium text-gray-900 dark:text-white text-sm">{mask.name(person)}</span>
+                              <span className={`text-xs font-medium ${bal > 0.5 ? 'text-success' : bal < -0.5 ? 'text-danger' : 'text-muted'}`}>
+                                {bal > 0.5 ? `le deben ${cur} ${mask.amount(bal)}` : bal < -0.5 ? `debe ${cur} ${mask.amount(Math.abs(bal))}` : '✓ par'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {settlements.length > 0 && (
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Cómo saldar</p>
+                          <div className="space-y-2.5">
+                            {settlements.map((s, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm">
+                                <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.from)}</span>
+                                <ArrowRight size={14} className="text-gray-400 shrink-0" />
+                                <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.to)}</span>
+                                <span className="ml-auto text-gray-700 dark:text-gray-300 font-semibold">{cur} {mask.amount2(s.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>
@@ -344,11 +394,32 @@ export function Expenses() {
               <div>
                 <label className={labelCls}>Moneda</label>
                 <select className={inputCls + ' bg-white dark:bg-gray-700'}
-                  value={form.currency} onChange={e => f('currency', e.target.value)}>
+                  value={form.currency}
+                  onChange={e => {
+                    const newCur = e.target.value
+                    setForm(p => ({ ...p, currency: newCur, ...(newCur === currency ? { exchangeRate: undefined } : {}) }))
+                  }}>
                   {['USD', 'EUR', 'ARS', 'GBP', 'BRL', 'CLP', 'MXN', 'COP'].map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
+
+            {form.currency !== currency && (
+              <div>
+                <label className={labelCls}>
+                  Tipo de cambio — 1 {form.currency} =
+                </label>
+                <div className="flex items-center gap-2">
+                  <MoneyInput
+                    className={inputCls}
+                    value={form.exchangeRate ?? 0}
+                    onChange={v => setForm(p => ({ ...p, exchangeRate: v || undefined }))}
+                    placeholder="0.00"
+                  />
+                  <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">{currency}</span>
+                </div>
+              </div>
+            )}
 
             <div>
               <label className={labelCls}>Fecha</label>
