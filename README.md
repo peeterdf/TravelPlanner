@@ -1,73 +1,96 @@
-# React + TypeScript + Vite
+# TravelPlanner
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Organizador de viajes grupales offline-first. Gestiona transportes, alojamientos, itinerario, actividades, gastos multi-moneda y checklist de equipaje — todo desde el celular, con sync opcional a la nube.
 
-Currently, two official plugins are available:
+**[Ver app →](https://peeterdf.github.io/TravelPlanner/)**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Viajes offline-first** — toda la data vive en el dispositivo (IndexedDB), funciona sin internet
+- **Sync en la nube** — sincronización automática a Firebase con un código de viaje compartible
+- **Multi-viajero** — invitá a otros con el código del viaje para colaborar en tiempo real
+- **Transportes** — vuelos, trenes, buses con horarios, aeropuertos y reservas
+- **Alojamiento** — hoteles y reservas con fechas, dirección y notas
+- **Itinerario** — día a día por ciudad con actividades y horarios
+- **Actividades** — lugares y planes con estado (pendiente/hecho/descartado)
+- **Gastos** — multi-moneda, categorías, split entre viajeros y saldo por persona
+- **Checklist de equipaje** — listas jerárquicas por categoría, con progreso
+- **Notas** — texto libre por viaje (direcciones, tips, recordatorios)
+- **Pases de embarque** — boarding passes `.pkpass` y QR personales
+- **Auditoría** — historial completo de cambios con usuario y timestamp
+- **Temas** — claro, oscuro, cálido, o sincronizado con el sistema
+- **Modo privacidad** — oculta montos y nombres sensibles
+- **PWA + Android** — instalable como app; build nativo con Capacitor
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Stack
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+| Capa | Tecnología |
+|------|-----------|
+| UI | React 19 + TypeScript + Tailwind CSS |
+| Estado | Zustand |
+| Routing | React Router v7 |
+| Storage local | localforage (IndexedDB) |
+| Backend | Firebase (Auth + Firestore) |
+| Build | Vite 8 + PWA (Workbox) |
+| Mobile | Capacitor 8 (Android) |
+| Íconos | Lucide React |
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Setup local
+
+```bash
+# Instalar dependencias (legacy-peer-deps requerido)
+npm ci --legacy-peer-deps
+
+# Copiar variables de entorno y completar con credenciales Firebase
+cp .env.example .env.local
+
+# Iniciar servidor de desarrollo
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Variables de entorno necesarias en `.env.local`:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
 ```
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_APP_ID=
+VITE_RECAPTCHA_SITE_KEY=   # opcional, habilita App Check
+```
+
+### Comandos
+
+```bash
+npm run dev       # Dev server con HMR
+npm run build     # TypeScript check + build de producción
+npm run lint      # ESLint
+npm run preview   # Preview del build de producción
+```
+
+---
+
+## Deployment
+
+### GitHub Pages
+
+El build de producción se despliega automáticamente a GitHub Pages. La base URL es `/TravelPlanner/`.
+
+### Android (Capacitor)
+
+```bash
+BUILD_TARGET=android npm run build
+npx cap sync android
+npx cap open android
+```
+
+---
+
+## Changelog
+
+Ver [CHANGELOG.md](./CHANGELOG.md) para el historial de versiones y cambios por release.
