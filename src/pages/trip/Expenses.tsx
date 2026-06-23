@@ -47,10 +47,44 @@ function calcSettlements(net: Record<string, number>) {
   return result
 }
 
+function ExchangeRatesPanel({
+  baseCurrency, expenseCurrencies, rates, onChange,
+}: {
+  baseCurrency: string
+  expenseCurrencies: string[]
+  rates: Record<string, number>
+  onChange: (rates: Record<string, number>) => void
+}) {
+  if (expenseCurrencies.length === 0) return null
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+        Tipos de cambio · a {baseCurrency}
+      </p>
+      <div className="space-y-2">
+        {expenseCurrencies.map(cur => (
+          <div key={cur} className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-20 shrink-0">
+              1 {cur} =
+            </span>
+            <MoneyInput
+              className="flex-1 border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-1.5 text-sm dark:bg-gray-700 dark:text-white"
+              value={rates[cur] ?? 0}
+              onChange={v => onChange({ ...rates, ...(v ? { [cur]: v } : Object.fromEntries(Object.entries(rates).filter(([k]) => k !== cur))) })}
+              placeholder="0.00"
+            />
+            <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">{baseCurrency}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function Expenses() {
   const { tripId } = useParams<{ tripId: string }>()
   const location = useLocation()
-  const { trips, addExpense, updateExpense, deleteExpense } = useTripsStore()
+  const { trips, addExpense, updateExpense, deleteExpense, setExchangeRates } = useTripsStore()
   const mask = useMask()
   const trip = trips.find(t => t.id === tripId)
   const [tab, setTab] = useState<'gastos' | 'balance'>('gastos')
@@ -88,13 +122,18 @@ export function Expenses() {
   const splitExpenses = sorted.filter(e => e.paidBy)
   const currency = trip.currency ?? 'USD'
 
-  // Balance: unified in trip currency using exchange rates
-  const convertible = splitExpenses.filter(e => (e.currency ?? currency) === currency || e.exchangeRate != null)
-  const nonConvertible = splitExpenses.filter(e => (e.currency ?? currency) !== currency && e.exchangeRate == null)
+  // Balance: unified in trip currency using per-expense rate or trip-level rate as fallback
+  const getRate = (e: typeof splitExpenses[0]) => {
+    const eCur = e.currency ?? currency
+    if (eCur === currency) return 1
+    return e.exchangeRate ?? trip.exchangeRates?.[eCur] ?? null
+  }
+  const convertible = splitExpenses.filter(e => getRate(e) !== null)
+  const nonConvertible = splitExpenses.filter(e => getRate(e) === null)
 
   const unifiedNet: Record<string, number> = {}
   for (const e of convertible) {
-    const rate = (e.currency ?? currency) === currency ? 1 : (e.exchangeRate ?? 1)
+    const rate = getRate(e) ?? 1
     const priceBase = round2(e.price * rate)
     const included = e.includedTravelers?.length ? e.includedTravelers : travelerNames
     const share = included.length > 0 ? round2(priceBase / included.length) : 0
@@ -118,7 +157,8 @@ export function Expenses() {
 
   const openAdd = () => {
     const today = new Date().toISOString().split('T')[0]
-    setForm({ ...EMPTY, currency: trip.currency ?? 'USD', date: today, includedTravelers: [...travelerNames] })
+    const baseCur = trip.currency ?? 'USD'
+    setForm({ ...EMPTY, currency: baseCur, date: today, includedTravelers: [...travelerNames] })
     setSimpleMode(true)
     setExpanded(false)
     setModal('add')
@@ -147,6 +187,9 @@ export function Expenses() {
     }
     if (modal === 'add') addExpense(tripId!, data)
     else if (modal === 'edit' && editId) updateExpense(tripId!, { ...data, id: editId })
+    if (exchangeRate && form.currency !== currency) {
+      setExchangeRates(tripId!, { ...(trip.exchangeRates ?? {}), [form.currency]: exchangeRate })
+    }
     setModal(null)
   }
 
@@ -259,6 +302,14 @@ export function Expenses() {
       {/* BALANCE TAB */}
       {tab === 'balance' && (
         <div className="p-4 space-y-4">
+          {/* Exchange rates panel */}
+          <ExchangeRatesPanel
+            baseCurrency={currency}
+            expenseCurrencies={[...new Set(sorted.map(e => e.currency ?? currency).filter(c => c !== currency))]}
+            rates={trip.exchangeRates ?? {}}
+            onChange={rates => setExchangeRates(tripId!, rates)}
+          />
+
           {splitExpenses.length === 0 ? (
             <EmptyState
               icon={<Users size={52} />}
@@ -399,7 +450,8 @@ export function Expenses() {
                   value={form.currency}
                   onChange={e => {
                     const newCur = e.target.value
-                    setForm(p => ({ ...p, currency: newCur, ...(newCur === currency ? { exchangeRate: undefined } : {}) }))
+                    const prefillRate = newCur !== currency ? (trip.exchangeRates?.[newCur] ?? undefined) : undefined
+                    setForm(p => ({ ...p, currency: newCur, exchangeRate: prefillRate }))
                   }}>
                   {['USD', 'EUR', 'ARS', 'GBP', 'BRL', 'CLP', 'MXN', 'COP'].map(c => <option key={c}>{c}</option>)}
                 </select>

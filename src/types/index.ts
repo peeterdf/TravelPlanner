@@ -122,6 +122,7 @@ export interface Trip {
   synced?: boolean
   cloudCode?: string
   ownerUid?: string
+  exchangeRates?: Record<string, number>
   updatedAt?: string
 }
 

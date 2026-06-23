@@ -79,6 +79,7 @@ interface TripsState {
   addExpense: (tripId: string, e: Omit<Expense, 'id'>) => void
   updateExpense: (tripId: string, e: Expense) => void
   deleteExpense: (tripId: string, expenseId: string) => void
+  setExchangeRates: (tripId: string, rates: Record<string, number>) => void
 
   // Packing
   togglePackingItem: (tripId: string, categoryId: string, itemId: string) => void
@@ -454,6 +455,14 @@ export const useTripsStore = create<TripsState>((set, get) => ({
       const desc = e ? `${e.concept} ${e.currency} ${e.price}` : expenseId
       return withAudit({ ...t, expenses: t.expenses.filter(e => e.id !== expenseId) }, mkAudit('delete', 'gasto', desc))
     })
+    persist(trips)
+    set({ trips })
+  },
+
+  setExchangeRates: (tripId, rates) => {
+    const trips = get().trips.map(t =>
+      t.id === tripId ? { ...t, exchangeRates: rates, updatedAt: new Date().toISOString() } : t
+    )
     persist(trips)
     set({ trips })
   },
