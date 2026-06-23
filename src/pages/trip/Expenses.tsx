@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useLocation } from 'react-router-dom'
-import { Plus, Trash2, Pencil, Wallet, CheckCircle2, Users, ArrowRight, Plane, Building2, UtensilsCrossed, Bus, Map, ShoppingBag, Package } from 'lucide-react'
+import { Plus, Trash2, Pencil, Wallet, CheckCircle2, Users, ArrowRight, Plane, Building2, UtensilsCrossed, Bus, Map, ShoppingBag, Package, ChevronDown } from 'lucide-react'
 import { useTripsStore } from '../../store/tripsStore'
 import { useMask } from '../../store/settingsStore'
 import { Modal } from '../../components/ui/Modal'
@@ -23,7 +23,7 @@ const CATEGORIES: { value: ExpenseCategory; label: string; icon: React.ReactNode
 
 const EMPTY: Omit<Expense, 'id'> = {
   concept: '', date: '', detail: '', price: 0, paid: 0,
-  reserved: false, currency: 'USD', paidBy: '', includedTravelers: [],
+  reserved: false, currency: 'USD', paidBy: '', includedTravelers: [], exchangeRate: undefined,
 }
 
 const inputCls = 'w-full border border-gray-300 dark:border-gray-600 rounded-xl px-3 py-2 text-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400'
@@ -58,6 +58,8 @@ export function Expenses() {
   const [form, setForm] = useState<Omit<Expense, 'id'>>(EMPTY)
   const [editId, setEditId] = useState<string | null>(null)
   const [paidError, setPaidError] = useState('')
+  const [simpleMode, setSimpleMode] = useState(false)
+  const [expanded, setExpanded] = useState(false)
 
   const travelerNames = trip?.travelers.map(t => t.name) ?? []
 
@@ -65,6 +67,8 @@ export function Expenses() {
     const prefill = (location.state as { prefill?: Partial<Omit<Expense, 'id'>> } | null)?.prefill
     if (prefill) {
       setForm({ ...EMPTY, currency: trip?.currency ?? 'USD', ...prefill, includedTravelers: [...travelerNames] })
+      setSimpleMode(false)
+      setExpanded(false)
       setModal('add')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -83,23 +87,45 @@ export function Expenses() {
   const splitExpenses = sorted.filter(e => e.paidBy)
   const currency = trip.currency ?? 'USD'
 
-  const netBalance: Record<string, number> = {}
-  for (const e of splitExpenses) {
-    const included = e.includedTravelers?.length ? e.includedTravelers : travelerNames
-    const share = included.length > 0 ? round2(e.price / included.length) : 0
-    netBalance[e.paidBy!] = round2((netBalance[e.paidBy!] ?? 0) + e.price)
-    for (const p of included) netBalance[p] = round2((netBalance[p] ?? 0) - share)
-  }
+  // Balance: unified in trip currency using exchange rates
+  const convertible = splitExpenses.filter(e => (e.currency ?? currency) === currency || e.exchangeRate != null)
+  const nonConvertible = splitExpenses.filter(e => (e.currency ?? currency) !== currency && e.exchangeRate == null)
 
-  const settlements = calcSettlements(netBalance)
+  const unifiedNet: Record<string, number> = {}
+  for (const e of convertible) {
+    const rate = (e.currency ?? currency) === currency ? 1 : (e.exchangeRate ?? 1)
+    const priceBase = round2(e.price * rate)
+    const included = e.includedTravelers?.length ? e.includedTravelers : travelerNames
+    const share = included.length > 0 ? round2(priceBase / included.length) : 0
+    unifiedNet[e.paidBy!] = round2((unifiedNet[e.paidBy!] ?? 0) + priceBase)
+    for (const p of included) unifiedNet[p] = round2((unifiedNet[p] ?? 0) - share)
+  }
+  const unifiedSettlements = calcSettlements(unifiedNet)
+
+  const nonConvertibleCurrencies = [...new Set(nonConvertible.map(e => e.currency ?? currency))]
+  const nonConvertibleByCurrency = nonConvertibleCurrencies.map(cur => {
+    const curExpenses = nonConvertible.filter(e => (e.currency ?? currency) === cur)
+    const net: Record<string, number> = {}
+    for (const e of curExpenses) {
+      const included = e.includedTravelers?.length ? e.includedTravelers : travelerNames
+      const share = included.length > 0 ? round2(e.price / included.length) : 0
+      net[e.paidBy!] = round2((net[e.paidBy!] ?? 0) + e.price)
+      for (const p of included) net[p] = round2((net[p] ?? 0) - share)
+    }
+    return { currency: cur, net, settlements: calcSettlements(net) }
+  })
 
   const openAdd = () => {
     setForm({ ...EMPTY, currency: trip.currency ?? 'USD', includedTravelers: [...travelerNames] })
+    setSimpleMode(true)
+    setExpanded(false)
     setModal('add')
   }
   const openEdit = (e: Expense) => {
     setForm({ ...e, includedTravelers: e.includedTravelers ?? [...travelerNames] })
     setEditId(e.id)
+    setSimpleMode(false)
+    setExpanded(false)
     setModal('edit')
   }
 
@@ -108,13 +134,14 @@ export function Expenses() {
     if (!concept) return
     if (form.paid > form.price) { setPaidError('El monto pagado no puede superar el precio total.'); return }
     setPaidError('')
-    const { category, paidBy, ...rest } = form
+    const { category, paidBy, exchangeRate, ...rest } = form
     const data = {
       ...rest,
       concept,
       detail: form.detail.trim(),
       ...(category ? { category } : {}),
       ...(paidBy ? { paidBy, includedTravelers: form.includedTravelers } : { includedTravelers: [] }),
+      ...(exchangeRate && form.currency !== currency ? { exchangeRate } : {}),
     }
     if (modal === 'add') addExpense(tripId!, data)
     else if (modal === 'edit' && editId) updateExpense(tripId!, { ...data, id: editId })
@@ -140,6 +167,8 @@ export function Expenses() {
       {label}
     </button>
   )
+
+  const showFullForm = !simpleMode || expanded
 
   return (
     <div className="flex flex-col pb-28">
@@ -236,35 +265,84 @@ export function Expenses() {
             />
           ) : (
             <>
-              {/* Balance per person */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Balance por persona</p>
-                <div className="space-y-2">
-                  {Object.entries(netBalance).sort((a, b) => b[1] - a[1]).map(([person, net]) => (
-                    <div key={person} className="flex items-center justify-between">
-                      <span className="font-medium text-gray-900 dark:text-white text-sm">{mask.name(person)}</span>
-                      <span className={`text-xs font-medium ${net > 0.5 ? 'text-success' : net < -0.5 ? 'text-danger' : 'text-muted'}`}>
-                        {net > 0.5 ? `le deben ${mask.amount(net)}` : net < -0.5 ? `debe ${mask.amount(Math.abs(net))}` : '✓ par'}
-                      </span>
+              {/* Unified balance in trip currency */}
+              {convertible.length > 0 && (
+                <div className="space-y-3">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">
+                      Balance por persona · {currency}
+                    </p>
+                    <div className="space-y-2">
+                      {Object.entries(unifiedNet).sort((a, b) => b[1] - a[1]).map(([person, bal]) => (
+                        <div key={person} className="flex items-center justify-between">
+                          <span className="font-medium text-gray-900 dark:text-white text-sm">{mask.name(person)}</span>
+                          <span className={`text-xs font-medium ${bal > 0.5 ? 'text-success' : bal < -0.5 ? 'text-danger' : 'text-muted'}`}>
+                            {bal > 0.5 ? `le deben ${currency} ${mask.amount(bal)}` : bal < -0.5 ? `debe ${currency} ${mask.amount(Math.abs(bal))}` : '✓ par'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {unifiedSettlements.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+                      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Cómo saldar</p>
+                      <div className="space-y-2.5">
+                        {unifiedSettlements.map((s, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.from)}</span>
+                            <ArrowRight size={14} className="text-gray-400 shrink-0" />
+                            <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.to)}</span>
+                            <span className="ml-auto text-gray-700 dark:text-gray-300 font-semibold">{currency} {mask.amount2(s.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Non-convertible expenses (no exchange rate set) */}
+              {nonConvertible.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-2">
+                    {nonConvertible.length === 1
+                      ? '1 gasto no tiene tipo de cambio y se muestra por separado.'
+                      : `${nonConvertible.length} gastos no tienen tipo de cambio y se muestran por separado.`}
+                  </p>
+                  {nonConvertibleByCurrency.map(({ currency: cur, net, settlements }) => (
+                    <div key={cur} className="space-y-3">
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">{cur}</p>
+                      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Balance por persona</p>
+                        <div className="space-y-2">
+                          {Object.entries(net).sort((a, b) => b[1] - a[1]).map(([person, bal]) => (
+                            <div key={person} className="flex items-center justify-between">
+                              <span className="font-medium text-gray-900 dark:text-white text-sm">{mask.name(person)}</span>
+                              <span className={`text-xs font-medium ${bal > 0.5 ? 'text-success' : bal < -0.5 ? 'text-danger' : 'text-muted'}`}>
+                                {bal > 0.5 ? `le deben ${cur} ${mask.amount(bal)}` : bal < -0.5 ? `debe ${cur} ${mask.amount(Math.abs(bal))}` : '✓ par'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {settlements.length > 0 && (
+                        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
+                          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Cómo saldar</p>
+                          <div className="space-y-2.5">
+                            {settlements.map((s, i) => (
+                              <div key={i} className="flex items-center gap-2 text-sm">
+                                <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.from)}</span>
+                                <ArrowRight size={14} className="text-gray-400 shrink-0" />
+                                <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.to)}</span>
+                                <span className="ml-auto text-gray-700 dark:text-gray-300 font-semibold">{cur} {mask.amount2(s.amount)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
-                </div>
-              </div>
-
-              {/* Settlements */}
-              {settlements.length > 0 && (
-                <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-4">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Cómo saldar</p>
-                  <div className="space-y-2.5">
-                    {settlements.map((s, i) => (
-                      <div key={i} className="flex items-center gap-2 text-sm">
-                        <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.from)}</span>
-                        <ArrowRight size={14} className="text-gray-400 shrink-0" />
-                        <span className="font-medium text-gray-900 dark:text-white">{mask.name(s.to)}</span>
-                        <span className="ml-auto text-gray-700 dark:text-gray-300 font-semibold">{currency} {mask.amount2(s.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
             </>
@@ -284,9 +362,10 @@ export function Expenses() {
           <div className="space-y-3">
             <div>
               <label className={labelCls}>Concepto *</label>
-              <input className={inputCls} placeholder="Alojamiento París"
+              <input className={inputCls} placeholder="Ej: Cena en restaurante"
                 value={form.concept} onChange={e => f('concept', e.target.value)} autoFocus />
             </div>
+
             <div>
               <label className={labelCls}>Categoría</label>
               <div className="flex flex-wrap gap-1.5">
@@ -305,6 +384,7 @@ export function Expenses() {
                 ))}
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelCls}>Precio</label>
@@ -314,70 +394,112 @@ export function Expenses() {
               <div>
                 <label className={labelCls}>Moneda</label>
                 <select className={inputCls + ' bg-white dark:bg-gray-700'}
-                  value={form.currency} onChange={e => f('currency', e.target.value)}>
+                  value={form.currency}
+                  onChange={e => {
+                    const newCur = e.target.value
+                    setForm(p => ({ ...p, currency: newCur, ...(newCur === currency ? { exchangeRate: undefined } : {}) }))
+                  }}>
                   {['USD', 'EUR', 'ARS', 'GBP', 'BRL', 'CLP', 'MXN', 'COP'].map(c => <option key={c}>{c}</option>)}
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Pagado</label>
-                <MoneyInput className={inputCls} value={form.paid}
-                  onChange={v => f('paid', v)} />
-              </div>
-              <div>
-                <label className={labelCls}>Fecha</label>
-                <DateInput className={inputCls} value={form.date}
-                  onChange={v => f('date', v)} />
-              </div>
-            </div>
-            <div>
-              <label className={labelCls}>Detalle</label>
-              <input className={inputCls} placeholder="Detalles adicionales"
-                value={form.detail} onChange={e => f('detail', e.target.value)} />
-            </div>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" className="w-4 h-4 rounded accent-blue-600"
-                checked={form.reserved} onChange={e => f('reserved', e.target.checked)} />
-              <span className="text-sm text-gray-700 dark:text-gray-300">Marcado como reservado</span>
-            </label>
 
-            {/* División section */}
-            {travelerNames.length === 0 ? (
-              <p className="text-xs text-gray-400 dark:text-gray-500 italic border-t border-gray-100 dark:border-gray-700 pt-3">
-                Agregá viajeros al viaje para registrar quién pagó y dividir el gasto.
-              </p>
-            ) : (
-            <div className="border-t border-gray-100 dark:border-gray-700 pt-3 space-y-3">
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">División entre viajeros (opcional)</p>
-                <div>
-                  <label className={labelCls}>Pagado por</label>
-                  <div className="flex flex-wrap gap-2">
-                    {travelerNames.map(n => (
-                      <button key={n} type="button" onClick={() => f('paidBy', form.paidBy === n ? '' : n)}
-                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${form.paidBy === n ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
-                        {n}
-                      </button>
-                    ))}
+            {form.currency !== currency && (
+              <div>
+                <label className={labelCls}>
+                  Tipo de cambio — 1 {form.currency} =
+                </label>
+                <div className="flex items-center gap-2">
+                  <MoneyInput
+                    className={inputCls}
+                    value={form.exchangeRate ?? 0}
+                    onChange={v => setForm(p => ({ ...p, exchangeRate: v || undefined }))}
+                    placeholder="0.00"
+                  />
+                  <span className="text-sm text-gray-500 dark:text-gray-400 shrink-0">{currency}</span>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className={labelCls}>Fecha</label>
+              <DateInput className={inputCls} value={form.date}
+                onChange={v => f('date', v)} />
+            </div>
+
+            {/* "Más opciones" toggle — only in simple mode before expanding */}
+            {simpleMode && !expanded && (
+              <button
+                type="button"
+                onClick={() => setExpanded(true)}
+                className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 font-medium py-1"
+              >
+                <ChevronDown size={14} /> Más opciones
+              </button>
+            )}
+
+            {/* Extended fields */}
+            {showFullForm && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>Pagado</label>
+                    <MoneyInput className={inputCls} value={form.paid}
+                      onChange={v => f('paid', v)} />
+                  </div>
+                  <div className="flex items-end pb-0.5">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" className="w-4 h-4 rounded accent-blue-600"
+                        checked={form.reserved} onChange={e => f('reserved', e.target.checked)} />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Reservado</span>
+                    </label>
                   </div>
                 </div>
-                {form.paidBy && (
-                  <div>
-                    <label className={labelCls}>Incluye a</label>
-                    <div className="flex flex-wrap gap-2">
-                      {travelerNames.map(n => {
-                        const included = form.includedTravelers ?? []
-                        return (
-                          <button key={n} type="button" onClick={() => toggleIncluded(n)}
-                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${included.includes(n) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+
+                <div>
+                  <label className={labelCls}>Detalle</label>
+                  <input className={inputCls} placeholder="Detalles adicionales"
+                    value={form.detail} onChange={e => f('detail', e.target.value)} />
+                </div>
+
+                {/* División section */}
+                {travelerNames.length === 0 ? (
+                  <p className="text-xs text-gray-400 dark:text-gray-500 italic border-t border-gray-100 dark:border-gray-700 pt-3">
+                    Agregá viajeros al viaje para registrar quién pagó y dividir el gasto.
+                  </p>
+                ) : (
+                  <div className="border-t border-gray-100 dark:border-gray-700 pt-3 space-y-3">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">División entre viajeros (opcional)</p>
+                    <div>
+                      <label className={labelCls}>Pagado por</label>
+                      <div className="flex flex-wrap gap-2">
+                        {travelerNames.map(n => (
+                          <button key={n} type="button" onClick={() => f('paidBy', form.paidBy === n ? '' : n)}
+                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${form.paidBy === n ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
                             {n}
                           </button>
-                        )
-                      })}
+                        ))}
+                      </div>
                     </div>
+                    {form.paidBy && (
+                      <div>
+                        <label className={labelCls}>Incluye a</label>
+                        <div className="flex flex-wrap gap-2">
+                          {travelerNames.map(n => {
+                            const included = form.includedTravelers ?? []
+                            return (
+                              <button key={n} type="button" onClick={() => toggleIncluded(n)}
+                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${included.includes(n) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                                {n}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
+              </>
             )}
 
             {paidError && <p className="text-xs text-danger">{paidError}</p>}

@@ -68,6 +68,7 @@ export interface Expense {
   category?: ExpenseCategory
   paidBy?: string
   includedTravelers?: string[]
+  exchangeRate?: number
 }
 
 export interface ExpenseSplit {
