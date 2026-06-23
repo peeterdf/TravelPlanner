@@ -66,7 +66,8 @@ export function Expenses() {
   useEffect(() => {
     const prefill = (location.state as { prefill?: Partial<Omit<Expense, 'id'>> } | null)?.prefill
     if (prefill) {
-      setForm({ ...EMPTY, currency: trip?.currency ?? 'USD', ...prefill, includedTravelers: [...travelerNames] })
+      const today = new Date().toISOString().split('T')[0]
+      setForm({ ...EMPTY, currency: trip?.currency ?? 'USD', date: today, ...prefill, includedTravelers: [...travelerNames] })
       setSimpleMode(false)
       setExpanded(false)
       setModal('add')
@@ -116,7 +117,8 @@ export function Expenses() {
   })
 
   const openAdd = () => {
-    setForm({ ...EMPTY, currency: trip.currency ?? 'USD', includedTravelers: [...travelerNames] })
+    const today = new Date().toISOString().split('T')[0]
+    setForm({ ...EMPTY, currency: trip.currency ?? 'USD', date: today, includedTravelers: [...travelerNames] })
     setSimpleMode(true)
     setExpanded(false)
     setModal('add')
@@ -427,6 +429,40 @@ export function Expenses() {
                 onChange={v => f('date', v)} />
             </div>
 
+            {/* División — always visible when there are travelers */}
+            {travelerNames.length > 0 && (
+              <div className="border-t border-gray-100 dark:border-gray-700 pt-3 space-y-3">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">División entre viajeros</p>
+                <div>
+                  <label className={labelCls}>Pagado por</label>
+                  <div className="flex flex-wrap gap-2">
+                    {travelerNames.map(n => (
+                      <button key={n} type="button" onClick={() => f('paidBy', form.paidBy === n ? '' : n)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${form.paidBy === n ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {form.paidBy && (
+                  <div>
+                    <label className={labelCls}>Incluye a</label>
+                    <div className="flex flex-wrap gap-2">
+                      {travelerNames.map(n => {
+                        const included = form.includedTravelers ?? []
+                        return (
+                          <button key={n} type="button" onClick={() => toggleIncluded(n)}
+                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${included.includes(n) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
+                            {n}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* "Más opciones" toggle — only in simple mode before expanding */}
             {simpleMode && !expanded && (
               <button
@@ -438,7 +474,7 @@ export function Expenses() {
               </button>
             )}
 
-            {/* Extended fields */}
+            {/* Extended fields: Pagado, Detalle, Reservado */}
             {showFullForm && (
               <>
                 <div className="grid grid-cols-2 gap-3">
@@ -455,49 +491,15 @@ export function Expenses() {
                     </label>
                   </div>
                 </div>
-
                 <div>
                   <label className={labelCls}>Detalle</label>
                   <input className={inputCls} placeholder="Detalles adicionales"
                     value={form.detail} onChange={e => f('detail', e.target.value)} />
                 </div>
-
-                {/* División section */}
-                {travelerNames.length === 0 ? (
+                {travelerNames.length === 0 && (
                   <p className="text-xs text-gray-400 dark:text-gray-500 italic border-t border-gray-100 dark:border-gray-700 pt-3">
                     Agregá viajeros al viaje para registrar quién pagó y dividir el gasto.
                   </p>
-                ) : (
-                  <div className="border-t border-gray-100 dark:border-gray-700 pt-3 space-y-3">
-                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">División entre viajeros (opcional)</p>
-                    <div>
-                      <label className={labelCls}>Pagado por</label>
-                      <div className="flex flex-wrap gap-2">
-                        {travelerNames.map(n => (
-                          <button key={n} type="button" onClick={() => f('paidBy', form.paidBy === n ? '' : n)}
-                            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${form.paidBy === n ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
-                            {n}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    {form.paidBy && (
-                      <div>
-                        <label className={labelCls}>Incluye a</label>
-                        <div className="flex flex-wrap gap-2">
-                          {travelerNames.map(n => {
-                            const included = form.includedTravelers ?? []
-                            return (
-                              <button key={n} type="button" onClick={() => toggleIncluded(n)}
-                                className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${included.includes(n) ? 'bg-green-600 text-white border-green-600' : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300'}`}>
-                                {n}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 )}
               </>
             )}
