@@ -13,6 +13,7 @@ export interface ScheduledNotification {
 }
 
 const STORE_KEY = 'scheduled_notifications'
+const NOTIF_CACHE = 'tp-notif-schedule'
 const ICON = `${import.meta.env.BASE_URL}icon-192.png`
 const isNative = Capacitor.isNativePlatform()
 
@@ -31,6 +32,23 @@ export async function requestPermission(): Promise<NotificationPermission> {
   if (!('Notification' in window)) return 'denied'
   if (Notification.permission !== 'default') return Notification.permission
   return Notification.requestPermission()
+}
+
+export async function checkExactAlarmGranted(): Promise<boolean> {
+  if (!isNative) return true
+  try {
+    const { exact_alarm } = await LocalNotifications.checkExactNotificationSetting()
+    return exact_alarm === 'granted'
+  } catch {
+    return true // older Android versions don't have this requirement
+  }
+}
+
+export async function openExactAlarmSettings(): Promise<void> {
+  if (!isNative) return
+  try {
+    await LocalNotifications.changeExactNotificationSetting()
+  } catch { /* unsupported */ }
 }
 
 export function buildSchedule(trips: Trip[]): ScheduledNotification[] {
@@ -106,8 +124,31 @@ export async function saveSchedule(trips: Trip[]): Promise<void> {
   const firedIds = new Set(existing.filter(n => n.fired).map(n => n.id))
   const schedule = buildSchedule(trips).map(n => ({ ...n, fired: firedIds.has(n.id) }))
   await localforage.setItem(STORE_KEY, schedule)
+
+  // Also persist to Cache API so the SW can read it after a browser restart
+  try {
+    const cache = await caches.open(NOTIF_CACHE)
+    await cache.put('schedule', new Response(JSON.stringify(schedule), {
+      headers: { 'Content-Type': 'application/json' },
+    }))
+  } catch { /* Cache API unavailable */ }
+
   const sw = navigator.serviceWorker?.controller
   if (sw) sw.postMessage({ type: 'SCHEDULE_NOTIFICATIONS', schedule: schedule.filter(n => !n.fired) })
+}
+
+interface PeriodicSyncManager {
+  register(tag: string, options?: { minInterval: number }): Promise<void>
+}
+
+export async function registerPeriodicSync(): Promise<void> {
+  if (!('serviceWorker' in navigator)) return
+  const reg = await navigator.serviceWorker.ready
+  if (!('periodicSync' in reg)) return
+  try {
+    await (reg as ServiceWorkerRegistration & { periodicSync: PeriodicSyncManager })
+      .periodicSync.register('check-notifications', { minInterval: 60 * 60 * 1000 })
+  } catch { /* periodicSync permission denied or browser unsupported */ }
 }
 
 async function showViaSwReg(title: string, options: NotificationOptions): Promise<void> {
