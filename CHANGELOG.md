@@ -7,7 +7,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ## [Unreleased]
 
-## [1.1.15] - 2026-06-23
+## [1.17] - 2026-06-26
 
 ### Added
 - Sección "Acerca de" en la pantalla Más: muestra versión de la app, descripción y stack técnico
@@ -16,7 +16,12 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 
 ---
 
-## [1.1.0] - inicial
+## [1.16] - 2026-06-23
+
+### Added
+- Gastos: ajustes de UI en la sección de gastos (build #16)
+
+## [1.0] - inicial
 
 ### Added
 - Gestión de viajes offline-first con almacenamiento en IndexedDB (localforage)
