@@ -49,6 +49,11 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Patch AndroidManifest — add SCHEDULE_EXACT_ALARM
+        run: |
+          sed -i 's|</manifest>|    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n</manifest>|' \
+            android/app/src/main/AndroidManifest.xml
+
       - name: Configure Google Services
         run: |
           echo "${{ secrets.GOOGLE_SERVICES_JSON }}" | base64 -d > android/app/google-services.json
