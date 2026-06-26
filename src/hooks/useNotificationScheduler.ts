@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { useTripsStore } from '../store/tripsStore'
 import { useSettingsStore } from '../store/settingsStore'
-import { saveSchedule, checkAndFireDue } from '../lib/notifications'
+import { saveSchedule, checkAndFireDue, registerPeriodicSync } from '../lib/notifications'
 
 const isNative = Capacitor.isNativePlatform()
 
@@ -17,6 +17,7 @@ export function useNotificationScheduler() {
     if (!isNative && (!('Notification' in window) || Notification.permission !== 'granted')) return
     void checkAndFireDue()
     void saveSchedule(trips)
+    void registerPeriodicSync()
     const id = setInterval(() => void checkAndFireDue(), 60_000)
     return () => clearInterval(id)
   }, [trips, notificationsEnabled])

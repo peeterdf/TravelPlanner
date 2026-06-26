@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Star, CheckSquare, FileText, ClipboardList, ArrowRight, LayoutDashboard, Ticket, Bell, BellOff, Info } from 'lucide-react'
+import { Star, CheckSquare, FileText, ClipboardList, ArrowRight, LayoutDashboard, Ticket, Bell, BellOff, Info, AlertTriangle } from 'lucide-react'
 import { useSettingsStore } from '../../store/settingsStore'
-import { requestPermission, saveSchedule } from '../../lib/notifications'
+import { requestPermission, saveSchedule, checkExactAlarmGranted, openExactAlarmSettings } from '../../lib/notifications'
 import { useTripsStore } from '../../store/tripsStore'
 import { Capacitor } from '@capacitor/core'
 import { AboutModal } from '../../components/ui/AboutModal'
@@ -15,15 +15,24 @@ export function More() {
   const { notificationsEnabled, setNotificationsEnabled } = useSettingsStore()
   const trips = useTripsStore(s => s.trips)
   const [showAbout, setShowAbout] = useState(false)
+  const [exactAlarmDenied, setExactAlarmDenied] = useState(false)
+
+  useEffect(() => {
+    if (!notificationsEnabled || !isNative) return
+    void checkExactAlarmGranted().then(granted => setExactAlarmDenied(!granted))
+  }, [notificationsEnabled])
 
   const handleToggleNotifications = async () => {
     if (notificationsEnabled) {
       setNotificationsEnabled(false)
+      setExactAlarmDenied(false)
     } else {
       const perm = await requestPermission()
       if (perm === 'granted') {
         setNotificationsEnabled(true)
         void saveSchedule(trips)
+        const granted = await checkExactAlarmGranted()
+        setExactAlarmDenied(!granted)
       }
     }
   }
@@ -85,6 +94,20 @@ export function More() {
             </div>
             <div className={`w-10 h-6 rounded-full flex items-center px-1 transition-colors ${notificationsEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'}`}>
               <div className={`w-4 h-4 bg-white rounded-full transition-transform ${notificationsEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
+            </div>
+          </button>
+        )}
+        {exactAlarmDenied && (
+          <button
+            onClick={() => void openExactAlarmSettings()}
+            className="w-full bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-700 p-4 flex items-start gap-3 text-left hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+          >
+            <AlertTriangle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Alarmas exactas no permitidas</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                Las notificaciones pueden no llegar con la app cerrada. Tocá para habilitar "Alarmas y recordatorios" en Ajustes.
+              </p>
             </div>
           </button>
         )}
