@@ -142,6 +142,10 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
     const merged: Trip = local
       ? {
           ...migrated,
+          expenses: [
+            ...migrated.expenses,
+            ...local.expenses.filter(le => !migrated.expenses.some(re => re.id === le.id)),
+          ],
           packingList: migrated.packingList.map(remoteCat => {
             const localCat = local.packingList.find(c => c.id === remoteCat.id)
             if (!localCat) return remoteCat
