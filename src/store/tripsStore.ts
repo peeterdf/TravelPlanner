@@ -124,28 +124,42 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
   const { setStatus, setError } = useSyncStore.getState()
   const unsub = subscribeTrip(trip.cloudCode, trip.id, (remote) => {
     const local = get().trips.find(t => t.id === trip.id)
-    // Local is newer (or remote has no timestamp): push local data to Firestore
-    // Uses fresh store data at snapshot time, not a stale startup closure
+    const migrated = migrateExpenseSplits(remote)
+
+    const syncCallback = (status: 'syncing' | 'synced' | 'error', msg?: string) => {
+      if (status === 'error') {
+        const detail = msg ?? 'Error desconocido'
+        setError(trip.id, detail)
+        useToastStore.getState().add(`Sync error (${trip.name}): ${detail}`)
+      } else {
+        setStatus(trip.id, status)
+      }
+    }
+
     if (local?.updatedAt && (!remote.updatedAt || local.updatedAt > remote.updatedAt)) {
-      scheduledUpload(local, (status, msg) => {
-        if (status === 'error') {
-          const detail = msg ?? 'Error desconocido'
-          setError(local.id, detail)
-          useToastStore.getState().add(`Sync error (${local.name}): ${detail}`)
-        } else {
-          setStatus(local.id, status)
-        }
-      })
+      // Local is newer: upload local, but first fold in any remote-only expenses so
+      // additions made by collaborators in Firestore are not overwritten.
+      const remoteOnly = migrated.expenses.filter(re => !local.expenses.some(le => le.id === re.id))
+      const toUpload = remoteOnly.length > 0
+        ? { ...local, expenses: [...local.expenses, ...remoteOnly] }
+        : local
+      if (remoteOnly.length > 0) {
+        const next = get().trips.map(t => t.id === trip.id ? toUpload : t)
+        set({ trips: next })
+        saveTrips(next, auth.currentUser?.uid ?? null).catch(console.error)
+      }
+      scheduledUpload(toUpload, syncCallback)
       return
     }
-    const migrated = migrateExpenseSplits(remote)
+
+    // Remote is newer: merge local-only expenses so offline additions survive.
+    const localOnly = local
+      ? local.expenses.filter(le => !migrated.expenses.some(re => re.id === le.id))
+      : []
     const merged: Trip = local
       ? {
           ...migrated,
-          expenses: [
-            ...migrated.expenses,
-            ...local.expenses.filter(le => !migrated.expenses.some(re => re.id === le.id)),
-          ],
+          expenses: [...migrated.expenses, ...localOnly],
           packingList: migrated.packingList.map(remoteCat => {
             const localCat = local.packingList.find(c => c.id === remoteCat.id)
             if (!localCat) return remoteCat
@@ -161,6 +175,8 @@ function attachListener(trip: Trip, get: () => TripsState, set: (s: Partial<Trip
       : migrated
     set({ trips: get().trips.map(t => t.id === trip.id ? merged : t) })
     saveTrips(get().trips, auth.currentUser?.uid ?? null).catch(console.error)
+    // Push recovered local-only expenses back to Firestore so other collaborators see them.
+    if (localOnly.length > 0) scheduledUpload(merged, syncCallback)
   })
   unsubscribers.set(trip.id, unsub)
 }
