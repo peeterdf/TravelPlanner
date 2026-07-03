@@ -23,9 +23,9 @@ export function MoneyInput({ value, onChange, className, placeholder = '0.00' }:
       value={display}
       onChange={e => {
         const raw = e.target.value
-        if (/^\d*\.?\d*$/.test(raw)) {
+        if (/^\d*[.,]?\d*$/.test(raw)) {
           setDisplay(raw)
-          onChange(parseFloat(raw) || 0)
+          onChange(parseFloat(raw.replace(',', '.')) || 0)
         }
       }}
     />
